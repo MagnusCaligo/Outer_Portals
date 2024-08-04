@@ -1,0 +1,7 @@
+ManifestFileVersion: 0
+CRC: 1985394900
+AssetBundleManifest:
+  AssetBundleInfos:
+    Info_0:
+      Name: magsbundle
+      Dependencies: {}

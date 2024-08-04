@@ -1,0 +1,59 @@
+﻿{
+    "name": "Derilict Ship",
+    "$schema": "https://raw.githubusercontent.com/Outer-Wilds-New-Horizons/new-horizons/main/NewHorizons/Schemas/body_schema.json",
+    "starSystem": "SolarSystem",
+    "Base": {
+        "groundSize": 0,
+        "surfaceSize": 0,
+        "surfaceGravity": 0,
+        "hasMapMarker": true
+    },
+    "Orbit": {
+        "semiMajorAxis": 1500,
+        "inclination": 90,
+        "primaryBody": "TIMBER_HEARTH",
+        "isMoon": true,
+        "isTidallyLocked": false,
+        "trueAnomaly": 330,
+        "longitudeOfAscendingNode": 75
+    },
+    "AmbientLights": [
+        {
+             "outerRadius": 100,
+             "innerRadius": 0,
+             "intensity": .3,
+             "position": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+             },
+             "tint":{
+                 "r": 3,
+                 "g": 104,
+                 "b": 141,
+                 "a": 255
+             }
+        }
+    ],
+    "Props": {
+        "details": [
+            {
+                "assetBundle": "assets/magsbundle",
+                "path":"Assets/Custom Prefabs/Mags_Vessel.prefab",
+                //"path": "DB_VesselDimension_Body/Sector_VesselDimension/Geometry_VesselDimension",
+                 "position": {
+                    "x": -62.10907,
+                    "y": -18.07434,
+                    "z": -22.43634
+                },
+                "rotation": {
+                    "x": 0,
+                    "y": 90,
+                    "z": 0
+                },
+                "alignRadial": true,
+                "keepLoaded": true
+            }
+        ]
+    }
+}

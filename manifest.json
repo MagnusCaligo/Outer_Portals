@@ -1,0 +1,10 @@
+{
+  "$schema": "https://raw.githubusercontent.com/ow-mods/owml/master/schemas/manifest_schema.json",
+  "filename": "First Test Mod.dll",
+  "author": "Mags",
+  "name": "First Test Mod",
+  "uniqueName": "Mags.First Test Mod",
+  "version": "0.1.1",
+  "owmlVersion": "2.13.0",
+  "dependencies": ["xen.NewHorizons"]
+}

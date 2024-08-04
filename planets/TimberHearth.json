@@ -1,0 +1,16 @@
+﻿{
+    "name": "Timber Hearth",
+    "Props": {
+        "details": [
+            {
+              "assetBundle": "assets/magsbundle",
+              "path": "Assets/Custom Prefabs/Mirror.prefab",
+              "position": {"x": 15.31995, "y": -48.13431, "z": 184.0632},
+              "rotation": {"x": 44.60432, "y": 259.9902, "z": 249.306},
+              "stretch": {"x": 1, "y": .56, "z": 1}
+            },
+
+        ]
+    }
+
+}
