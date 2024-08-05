@@ -1,0 +1,18 @@
+ManifestFileVersion: 0
+CRC: 894791930
+Hashes:
+  AssetFileHash:
+    serializedVersion: 2
+    Hash: 566c20aa64fccf8e3d3d9c10d71dba15
+  TypeTreeHash:
+    serializedVersion: 2
+    Hash: 55d48f4ad9c3b13330b9eb5ee5686477
+HashAppended: 0
+ClassTypes:
+- Class: 48
+  Script: {instanceID: 0}
+SerializeReferenceClassIdentifiers: []
+Assets:
+- Assets/Custom Prefabs/PortalShader.shader
+Dependencies:
+- C:/Users/joe30/source/repos/First Test Mod/assets/portal/portal_props

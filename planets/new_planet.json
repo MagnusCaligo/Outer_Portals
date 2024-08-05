@@ -38,7 +38,7 @@
     "Props": {
         "details": [
             {
-                "assetBundle": "assets/magsbundle",
+                "assetBundle": "assets/portal/portal_props",
                 "path":"Assets/Custom Prefabs/Mags_Vessel.prefab",
                 //"path": "DB_VesselDimension_Body/Sector_VesselDimension/Geometry_VesselDimension",
                  "position": {

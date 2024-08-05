@@ -1,7 +1,12 @@
 ManifestFileVersion: 0
-CRC: 1985394900
+CRC: 2215661583
 AssetBundleManifest:
   AssetBundleInfos:
     Info_0:
-      Name: magsbundle
-      Dependencies: {}
+      Name: portal/portal_props
+      Dependencies:
+        Dependency_0: portal/portal_shaders
+    Info_1:
+      Name: portal/portal_shaders
+      Dependencies:
+        Dependency_0: portal/portal_props

@@ -1,18 +1,21 @@
-﻿using HarmonyLib;
+﻿using First_Test_Mod.src;
+using HarmonyLib;
 using OWML.Common;
 using OWML.ModHelper;
 using System.Collections;
+using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace First_Test_Mod;
 [HarmonyPatch]
 public class First_Test_Mod : ModBehaviour
 {
 	public static First_Test_Mod Instance;
-public INewHorizons NewHorizons;
+    public INewHorizons NewHorizons;
 
-    private AssetBundle bundle;
+    public AssetBundle shaderBundle;
 
 public void Awake()
 {
@@ -36,27 +39,20 @@ public void Start()
 
     // Example of accessing game code.
     OnCompleteSceneLoad(OWScene.TitleScreen, OWScene.TitleScreen); // We start on title screen
-    //bundle = ModHelper.Assets.LoadBundle("assets/magsbundle");
+    shaderBundle = ModHelper.Assets.LoadBundle("assets/portal/portal_shaders");
     LoadManager.OnCompleteSceneLoad += OnCompleteSceneLoad;
 
+    var api = ModHelper.Interaction.TryGetModApi<INewHorizons>("xen.NewHorizons");
+    api.GetBodyLoadedEvent().AddListener((name) =>
+    {
+        ModHelper.Console.WriteLine($"Body: {name} Loaded!");
+        var data = api.QueryBody<PortalLinks>(name, ".PortalLinks");
+        if (data != null)
+        {
+            ModHelper.Console.WriteLine("Data found!");
+        }
+    });
 }
-
-    [HarmonyPrefix]
-    [HarmonyPatch(typeof(GhostData), nameof(GhostData.FixedUpdate_Data))]
-    public static bool GhostData_FixedUpdate_Data_Prefix(GhostData __instance)
-    {
-        return false;
-    }
-
-    [HarmonyPrefix]
-    [HarmonyPatch(typeof(Campfire), nameof(Campfire.OnPressInteract))]
-    public static void Campfire_OnPressInteract_Prefix(Campfire __instance)
-    {
-        First_Test_Mod.Instance.ModHelper.Console.WriteLine($"Sector is {__instance.GetSector()}");
-        First_Test_Mod.Instance.ModHelper.Console.WriteLine($"Sector is {__instance.GetType()}");
-
-    }
-
 
 public void OnCompleteSceneLoad(OWScene previousScene, OWScene newScene)
     {
@@ -64,14 +60,6 @@ public void OnCompleteSceneLoad(OWScene previousScene, OWScene newScene)
         ModHelper.Console.WriteLine("Loaded into solar system!", MessageType.Success);
 
         GlobalMessenger.AddListener("WakeUp", () => { StartCoroutine("helper_function"); });
-
-        /*
-        var prefab = bundle.LoadAsset("Assets/Custom Prefabs/Mirror.prefab");
-        GameObject.Instantiate(prefab);
-        prefab = bundle.LoadAsset("Assets/Custom Prefabs/BasicTestObject.prefab");
-        GameObject.Instantiate(prefab);
-        */
-
     }
 
     public IEnumerator helper_function()
@@ -82,11 +70,8 @@ public void OnCompleteSceneLoad(OWScene previousScene, OWScene newScene)
         
     }
 
-   // [HarmonyPostfix]
-    //[HarmonyPatch(typeof(PlayerCharacterController), nameof(PlayerCharacterController.OnPlayerResurrection))]
     public static void movement_unlocked()
     {
-
         First_Test_Mod.Instance.ModHelper.Console.WriteLine("Should be putting on suit");
         DreamLanternItem newLantern = new DreamLanternItem();
         Locator.GetPlayerSuit().SuitUp(false, false, true);
