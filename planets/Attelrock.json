@@ -1,0 +1,24 @@
+﻿{
+	name: "Attlerock",
+    "Props": {
+        "details": [
+	        {
+                "rename": "portal3",
+                "assetBundle": "assets/portal/portal_props",
+                "path": "Assets/Custom Prefabs/Mirror.prefab",
+                "rotation": {
+                    "x": 5.315672,
+                    "y": 2.42881012,
+                    "z": 29.6642761
+                },
+                "position": {
+                    "x": -29.1517258,
+                    "y": 68.84166,
+                    "z": 7.26838875
+                }
+             }
+        ]
+
+    }
+
+}

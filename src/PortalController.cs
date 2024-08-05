@@ -5,9 +5,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
+using HarmonyLib;
+using UnityEngine.Windows.WebCam;
 
 namespace First_Test_Mod.src
 {
+    [HarmonyPatch]
     internal class PortalController : MonoBehaviour
     {
 
@@ -19,8 +22,9 @@ namespace First_Test_Mod.src
 
         private Renderer portalRenderer;
 
-        public OWCamera playerCamera;
+        public static OWCamera playerCamera;
         private static Shader portalShader;
+        private static List<Camera>cameras = new List<Camera>();
 
         public void Awake()
         {
@@ -31,10 +35,12 @@ namespace First_Test_Mod.src
         public void Start()
         {
             Debug.Log("In start function of portal");
-            playerCamera = Locator.GetActiveCamera();
+            if (playerCamera == null)
+                playerCamera = Locator.GetActiveCamera();
 
             if (camera == null)
                 camera = gameObject.AddComponent<Camera>();
+            cameras.Add(camera);
 
             Debug.Log("Creating Material");
             if (portalShader == null)
@@ -72,6 +78,21 @@ namespace First_Test_Mod.src
 
             camera.transform.position = newPos;
             camera.transform.rotation = Quaternion.LookRotation(forwardCameraDirection, parentObjectUp);
+        }
+
+        public void OnDestroy()
+        {
+            cameras.Remove(camera);
+        }
+
+        [HarmonyPostfix]
+        [HarmonyPatch(typeof(PlayerCameraController), nameof(PlayerCameraController.UpdateFieldOfView))]
+        public static void matchFieldOfView()
+        {
+            if (playerCamera == null)
+                return;
+            foreach (Camera cam in PortalController.cameras)
+                cam.fieldOfView = playerCamera.fieldOfView;
         }
 
     }
