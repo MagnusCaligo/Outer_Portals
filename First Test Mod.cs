@@ -43,14 +43,16 @@ public void Start()
     LoadManager.OnCompleteSceneLoad += OnCompleteSceneLoad;
 
     var api = ModHelper.Interaction.TryGetModApi<INewHorizons>("xen.NewHorizons");
-    api.GetBodyLoadedEvent().AddListener((name) =>
+    api.GetStarSystemLoadedEvent().AddListener((name) =>
     {
         ModHelper.Console.WriteLine($"Body: {name} Loaded!");
-        var data = api.QueryBody<PortalLinks>(name, ".PortalLinks");
-        if (data != null)
-        {
-            ModHelper.Console.WriteLine("Data found!");
-        }
+        var data = api.QuerySystem<PortalLinks>("$.extras.PortalLinks");
+        if (data != null) {
+            ModHelper.Console.WriteLine("Found Portal Link Data");
+            PortalController.linkPortals(data);
+         }
+        else
+            ModHelper.Console.WriteLine("No Portal Links found!");
     });
 }
 

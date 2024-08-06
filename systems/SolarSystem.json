@@ -1,3 +1,11 @@
 ﻿{
-
+	"name": "SolarSystem",
+    "extras": {
+        "PortalLinks": {
+            "links": {
+                "portal1" : "portal3",
+                "portal3" : "portal1"
+            }
+        }
+    }
 }

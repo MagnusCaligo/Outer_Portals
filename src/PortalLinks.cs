@@ -8,5 +8,5 @@ using System.Threading.Tasks;
 public class PortalLinks
 {
     // List of links of portals on this body
-    Dictionary<string, string> links;
+    public Dictionary<string, string> links;
 }

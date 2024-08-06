@@ -24,7 +24,7 @@ namespace First_Test_Mod.src
 
         public static OWCamera playerCamera;
         private static Shader portalShader;
-        private static List<Camera>cameras = new List<Camera>();
+        private static List<Camera> cameras = new List<Camera>();
 
         public void Awake()
         {
@@ -64,25 +64,87 @@ namespace First_Test_Mod.src
 
         public void Update()
         {
-            Vector3 playerInLocal = transform.InverseTransformPoint(playerCamera.transform.position);
-            Vector3 newPos = new Vector3(-playerInLocal.x, playerInLocal.y, -playerInLocal.z);
-            newPos = transform.TransformPoint(newPos);
 
-            Vector3 parentObjectUp = transform.rotation * Vector3.up;
-            Quaternion yawDifference = new Quaternion();
+            Vector3 newPos;
+            Quaternion newRot;
+            Vector3 playerInLocal;
             if (linkedToSelf)
             {
-                yawDifference = Quaternion.AngleAxis(180, parentObjectUp);
+                playerInLocal = transform.InverseTransformPoint(playerCamera.transform.position);
+                newPos = new Vector3(-playerInLocal.x, playerInLocal.y, -playerInLocal.z);
+                newPos = transform.TransformPoint(newPos);
             }
-            Vector3 forwardCameraDirection = yawDifference * (playerCamera.transform.forward);
+            else
+            {
+                //playerInLocal = linkedPortal.transform.InverseTransformPoint(playerCamera.transform.position);
+                playerInLocal = transform.InverseTransformPoint(playerCamera.transform.position);
+                if (linkedPortal == null)
+                    return;
+                playerInLocal = new Vector3(-playerInLocal.x, playerInLocal.y, -playerInLocal.z);
+                newPos = linkedPortal.transform.TransformPoint(playerInLocal);
+            }
+
+            Vector3 outputPortalUp;
+            if (linkedToSelf)
+            {
+                outputPortalUp = transform.rotation * Vector3.up;
+                Quaternion yawDifference;
+                yawDifference = Quaternion.AngleAxis(180, outputPortalUp);
+                Vector3 forwardCameraDirection = yawDifference * (playerCamera.transform.forward);
+                newRot = Quaternion.LookRotation(forwardCameraDirection, outputPortalUp);
+            }
+            else
+            {
+                if (linkedPortal == null)
+                    return;
+                outputPortalUp = linkedPortal.transform.rotation * Vector3.up;
+                Vector3 difference = playerCamera.transform.forward - transform.forward;
+                newRot = Quaternion.LookRotation(-linkedPortal.transform.forward, outputPortalUp) * transform.InverseTransformRotation(playerCamera.transform.rotation);
+
+            }
 
             camera.transform.position = newPos;
-            camera.transform.rotation = Quaternion.LookRotation(forwardCameraDirection, parentObjectUp);
+            camera.transform.rotation = newRot;
         }
 
         public void OnDestroy()
         {
             cameras.Remove(camera);
+        }
+
+        public static void linkPortals(PortalLinks links)
+        {
+            foreach (KeyValuePair<string, string> link in links.links)
+            {
+                GameObject entrance_portal = GameObject.Find(link.Key);
+                GameObject exit_portal = GameObject.Find(link.Value);
+                if (entrance_portal == null)
+                {
+                    First_Test_Mod.Instance.ModHelper.Console.WriteLine($"Error: Failed to find portal with name {link.Key}");
+                    continue;
+                }
+                if (exit_portal == null)
+                {
+                    First_Test_Mod.Instance.ModHelper.Console.WriteLine($"Error: Failed to find portal with name {link.Value}");
+                    continue;
+                }
+                PortalController entr_portal_controller = entrance_portal.GetComponent<PortalController>();
+                PortalController exit_portal_controller = exit_portal.GetComponent<PortalController> ();
+                if (entr_portal_controller == null)
+                {
+                    First_Test_Mod.Instance.ModHelper.Console.WriteLine($"Entrance portal with name {link.Key} does not have a portal controller.");
+                    continue;
+                }
+                if (exit_portal_controller == null)
+                {
+                    First_Test_Mod.Instance.ModHelper.Console.WriteLine($"Exit portal with name {link.Value} does not have a portal controller.");
+                    continue;
+                }
+                First_Test_Mod.Instance.ModHelper.Console.WriteLine($"Linking {link.Key} to {link.Value}");
+                entr_portal_controller.linkedPortal = exit_portal_controller;
+                entr_portal_controller.linkedToSelf = false;
+
+            }
         }
 
         [HarmonyPostfix]
