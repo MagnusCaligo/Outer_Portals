@@ -10,6 +10,7 @@ using UnityEngine.Windows.WebCam;
 using NewHorizons.Components;
 using NewHorizons.Utility.OWML;
 using HarmonyLib.Tools;
+using NewHorizons.Utility;
 
 namespace First_Test_Mod.src
 {
@@ -45,21 +46,10 @@ namespace First_Test_Mod.src
                 playerCamera = Locator.GetActiveCamera();
 
             if (camera == null)
-                camera = gameObject.AddComponent<Camera>();
+                camera = gameObject.GetComponent<Camera>();
             cameras.Add(camera);
             camera.cullingMask = 4194321;
-
-            /*
-            sectorDetector._occupantType = DynamicOccupant.Probe;
-
-            sectorDetector.AddSector(SectorManager.GetRegisteredSectors().Find(sector => sector.name.Equals("Sector_StartingCamp")));
-            sectorDetector.AddSector(SectorManager.GetRegisteredSectors().Find(sector => sector.name.Equals("Sector_LowerVillage")));
-            sectorDetector.AddSector(SectorManager.GetRegisteredSectors().Find(sector => sector.name.Equals("Sector_TH")));
-            sectorDetector.AddSector(SectorManager.GetRegisteredSectors().Find(sector => sector.name.Equals("Sector_Village")));
-            sectorDetector.AddSector(SectorManager.GetRegisteredSectors().Find(sector => sector.name.Equals("Sector_Observatory")));
-            SectorManager.RegisterSectorDetector(sectorDetector);*/
-
-
+            camera.backgroundColor = Color.black;
 
             if (portalShader == null)
             {
@@ -83,40 +73,26 @@ namespace First_Test_Mod.src
             Vector3 newPos;
             Quaternion newRot;
             Vector3 playerInLocal;
-            if (linkedToSelf)
-            {
-                playerInLocal = transform.InverseTransformPoint(playerCamera.transform.position);
-                newPos = new Vector3(-playerInLocal.x, playerInLocal.y, -playerInLocal.z);
-                newPos = transform.TransformPoint(newPos);
-            }
-            else
-            {
-                //playerInLocal = linkedPortal.transform.InverseTransformPoint(playerCamera.transform.position);
-                playerInLocal = transform.InverseTransformPoint(playerCamera.transform.position);
-                if (linkedPortal == null)
-                    return;
-                playerInLocal = new Vector3(-playerInLocal.x, playerInLocal.y, -playerInLocal.z);
-                newPos = linkedPortal.transform.TransformPoint(playerInLocal);
-            }
-
             Vector3 outputPortalUp;
+            Transform output_portal_transform;
             if (linkedToSelf)
             {
-                outputPortalUp = transform.rotation * Vector3.up;
-                Quaternion yawDifference;
-                yawDifference = Quaternion.AngleAxis(180, outputPortalUp);
-                Vector3 forwardCameraDirection = yawDifference * (playerCamera.transform.forward);
-                newRot = Quaternion.LookRotation(forwardCameraDirection, outputPortalUp);
+                output_portal_transform = transform;
             }
             else
             {
                 if (linkedPortal == null)
                     return;
-                outputPortalUp = linkedPortal.transform.rotation * Vector3.up;
-                Vector3 difference = playerCamera.transform.forward - transform.forward;
-                newRot = Quaternion.LookRotation(-linkedPortal.transform.forward, outputPortalUp) * transform.InverseTransformRotation(playerCamera.transform.rotation);
-
+                output_portal_transform = linkedPortal.transform;
             }
+
+            playerInLocal = transform.InverseTransformPoint(playerCamera.transform.position);
+            playerInLocal = new Vector3(-playerInLocal.x, playerInLocal.y, -playerInLocal.z);  // Position on opposite side of portal
+            newPos = output_portal_transform.TransformPoint(playerInLocal);
+
+            outputPortalUp = output_portal_transform.rotation * Vector3.up;
+            Vector3 difference = playerCamera.transform.forward - transform.forward;
+            newRot = Quaternion.LookRotation(-output_portal_transform.forward, outputPortalUp) * transform.InverseTransformRotation(playerCamera.transform.rotation);
 
             camera.transform.position = newPos;
             camera.transform.rotation = newRot;
