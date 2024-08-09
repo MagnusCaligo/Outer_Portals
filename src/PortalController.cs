@@ -7,6 +7,9 @@ using System.Threading.Tasks;
 using UnityEngine;
 using HarmonyLib;
 using UnityEngine.Windows.WebCam;
+using NewHorizons.Components;
+using NewHorizons.Utility.OWML;
+using HarmonyLib.Tools;
 
 namespace First_Test_Mod.src
 {
@@ -19,30 +22,45 @@ namespace First_Test_Mod.src
         private Material cameraMaterial;
         public PortalController linkedPortal;
         public bool linkedToSelf = false;
+        public String sectorName;
 
-        private Renderer portalRenderer;
+        //private SectorDetector sectorDetector;
 
         public static OWCamera playerCamera;
         private static Shader portalShader;
         private static List<Camera> cameras = new List<Camera>();
+        private Renderer renderer;
+        private bool lastVisibility = false;
+        private VisibilityObject visibilityObject;
 
         public void Awake()
         {
-            portalRenderer = GetComponent<Renderer>();
             portalShader = First_Test_Mod.Instance.shaderBundle.LoadAsset<Shader>("Assets/Custom Prefabs/PortalShader.shader");
+            
         }
 
         public void Start()
         {
-            Debug.Log("In start function of portal");
             if (playerCamera == null)
                 playerCamera = Locator.GetActiveCamera();
 
             if (camera == null)
                 camera = gameObject.AddComponent<Camera>();
             cameras.Add(camera);
+            camera.cullingMask = 4194321;
 
-            Debug.Log("Creating Material");
+            /*
+            sectorDetector._occupantType = DynamicOccupant.Probe;
+
+            sectorDetector.AddSector(SectorManager.GetRegisteredSectors().Find(sector => sector.name.Equals("Sector_StartingCamp")));
+            sectorDetector.AddSector(SectorManager.GetRegisteredSectors().Find(sector => sector.name.Equals("Sector_LowerVillage")));
+            sectorDetector.AddSector(SectorManager.GetRegisteredSectors().Find(sector => sector.name.Equals("Sector_TH")));
+            sectorDetector.AddSector(SectorManager.GetRegisteredSectors().Find(sector => sector.name.Equals("Sector_Village")));
+            sectorDetector.AddSector(SectorManager.GetRegisteredSectors().Find(sector => sector.name.Equals("Sector_Observatory")));
+            SectorManager.RegisterSectorDetector(sectorDetector);*/
+
+
+
             if (portalShader == null)
             {
                 Debug.LogError("Shader not found! Setting to empty one.");
@@ -52,19 +70,16 @@ namespace First_Test_Mod.src
 
             if (camera.targetTexture != null)
                 camera.targetTexture.Release();
-            Debug.Log("Creating Render Texture");
             camera.targetTexture = new RenderTexture(Screen.width, Screen.height, 24);
-            Debug.Log("Setting target texture");
             cameraMaterial.mainTexture = camera.targetTexture;
-            Debug.Log("Checking texture set: " + (camera.targetTexture != null));
 
             renderPlane.GetComponent<MeshRenderer>().material = cameraMaterial;
+            visibilityObject = renderPlane.GetComponent<VisibilityObject>();
 
         }
 
-        public void Update()
+        public void FixedUpdate()
         {
-
             Vector3 newPos;
             Quaternion newRot;
             Vector3 playerInLocal;
@@ -105,6 +120,63 @@ namespace First_Test_Mod.src
 
             camera.transform.position = newPos;
             camera.transform.rotation = newRot;
+            UpdateVisibility();
+
+        }
+
+        public void OnBecameVisible()
+        {
+            NHLogger.Log($"Portal {name} is now visible!");
+        }
+
+        public void OnBecameInvisible()
+        {
+            NHLogger.Log($"Portal {name} is no longer visible!");
+        }
+
+        public void UpdateVisibility()
+        {
+            if (visibilityObject != null)
+            {
+                if (linkedPortal == null)
+                    return;
+                if (visibilityObject.IsVisible() && !lastVisibility)
+                {
+                    var linkedPortalSectorName = linkedPortal.sectorName;
+                    if (linkedPortalSectorName == null)
+                        return;
+                    Sector sector = SectorManager.GetRegisteredSectors().Find(sector => sector.name.Equals(linkedPortalSectorName));
+                    if (sector == null)
+                        return;
+
+                    // If the player is already there, no need to keep going
+                    if (sector.ContainsOccupant(DynamicOccupant.Player))
+                        return;
+                    
+
+                    do
+                    {
+                        NHLogger.Log($"From portal: {name}, adding to sector {sector.name}");
+                        sector.AddOccupant(Locator.GetPlayerSectorDetector());
+                        sector = sector.GetParentSector();
+                    } while (sector != null);
+                    
+                }else if(!visibilityObject.IsVisible() && lastVisibility)
+                {
+                    var linkedPortalSectorName = linkedPortal.sectorName;
+                    if (linkedPortalSectorName == null)
+                        return;
+                    Sector sector = SectorManager.GetRegisteredSectors().Find(sector => sector.name.Equals(linkedPortalSectorName));
+                    if (sector == null)
+                        return;
+                    do
+                    {
+                        //sector.RemoveOccupant(Locator.GetPlayerSectorDetector());
+                        sector = sector.GetParentSector();
+                    } while (sector != null); 
+                }
+                lastVisibility = visibilityObject.IsVisible();
+            }
         }
 
         public void OnDestroy()
@@ -143,7 +215,14 @@ namespace First_Test_Mod.src
                 First_Test_Mod.Instance.ModHelper.Console.WriteLine($"Linking {link.Key} to {link.Value}");
                 entr_portal_controller.linkedPortal = exit_portal_controller;
                 entr_portal_controller.linkedToSelf = false;
+            }
 
+            foreach (KeyValuePair<string, string> portal_and_sector in links.sectors)
+            {
+                GameObject portal = GameObject.Find(portal_and_sector.Key);
+                if (portal == null)
+                    continue;
+                GameObject.Find(portal_and_sector.Key).GetComponent<PortalController>().sectorName = portal_and_sector.Value;
             }
         }
 

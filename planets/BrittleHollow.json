@@ -1,0 +1,17 @@
+﻿{
+    "name": "Brittle Hollow",
+	"Props": {
+        "details": [
+            {
+            "rename": "bh_to_th",
+                "assetBundle": "assets/portal/portal_props",
+                "path": "Assets/Custom Prefabs/Mirror.prefab",
+                "position": { "x": 3.896441, "y": 13.21741, "z": 156.0595},
+                "rotation": { "x": 42.02976, "y": 87.98242, "z": 81.89891},
+                "normal": { "x": 0.05943488, "y": 0.1046752, "z": 0.992729}
+
+        },
+        ]
+
+    }
+}

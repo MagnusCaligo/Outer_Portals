@@ -1,0 +1,18 @@
+﻿{
+	"name": "Ember Twin",
+	"Props": {
+        "details": [
+            {
+                "rename": "et_to_th",
+                "assetBundle": "assets/portal/portal_props",
+                "path": "Assets/Custom Prefabs/Mirror.prefab",
+                "position": {"x": 3.15258, "y": 156.817, "z": 2.365995},
+                "rotation": {"x": 2.266777, "y": 99.19004, "z": 1.687894},
+                "normal": {"x": 0.04373201, "y": 0.998784, "z": 0.0227628},
+                "parentPath": "CaveTwin_Body/Sector_CaveTwin/Geometry_CaveTwin"
+
+            },
+        ]
+
+    }
+}

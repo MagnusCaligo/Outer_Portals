@@ -9,4 +9,5 @@ public class PortalLinks
 {
     // List of links of portals on this body
     public Dictionary<string, string> links;
+    public Dictionary<string, string> sectors;
 }

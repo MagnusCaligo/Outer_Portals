@@ -1,0 +1,17 @@
+﻿{
+	"name": "Giants Deep",
+	"Props": {
+        "details": [
+            {
+                "rename": "gd_to_th",
+                "assetBundle": "assets/portal/portal_props",
+                "path": "Assets/Custom Prefabs/Mirror.prefab",
+                "position": {"x": -10.083, "y": -0.2976302, "z": 42.61108},
+                "rotation": {"x": 349.137, "y": 139.537, "z": 5.758886},
+                "normal": {"x": -0.04534286, "y": 0.977124, "z": 0.2077802}
+
+            },
+        ]
+
+    }
+}

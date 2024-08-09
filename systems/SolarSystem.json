@@ -3,8 +3,24 @@
     "extras": {
         "PortalLinks": {
             "links": {
-                "portal1" : "portal3",
-                "portal3" : "portal1"
+                "portal1" : "observatory_portal",
+                "portal2" : "portal1",
+                "th_to_ar" : "ar_to_th",
+                "th_to_bh" : "bh_to_th",
+                "th_to_et" : "et_to_th",
+                "th_to_gd" : "portal1",
+                "observatory_portal": "portal1",
+                "bh_to_th" : "th_to_bh"
+            },
+            "sectors": {
+                "portal1": "Sector_StartingCamp",
+                "observatory_portal": "Sector_Observatory",
+                "th_to_ar": "Sector_StartingCamp",
+                "th_to_bh": "Sector_StartingCamp",
+                "th_to_et": "Sector_StartingCamp",
+                "bh_to_th": "Sector_Crossroads",
+                "et_to_th": "Sector_Lakebed",
+                "ar_to_th": "Sector_THM"
             }
         }
     }
