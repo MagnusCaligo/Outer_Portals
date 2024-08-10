@@ -33,6 +33,14 @@ namespace First_Test_Mod.src
         private Renderer renderer;
         private bool lastVisibility = false;
         private VisibilityObject visibilityObject;
+        private Plane plane;
+
+        private GameObject debugSphere;
+        private GameObject debugPlane;
+        private bool useDebugSphere;
+        private int counter = 0;
+        private IEnumerable<Vector3> corners;
+
 
         public void Awake()
         {
@@ -42,6 +50,31 @@ namespace First_Test_Mod.src
 
         public void Start()
         {
+            float radiusOfPortal = transform.localScale.x * (renderPlane.transform.localScale.x / 2f);
+            corners = new Vector3[4];
+            corners.AddItem(new Vector3(-radiusOfPortal, -radiusOfPortal, 0));
+            corners.AddItem(new Vector3(-radiusOfPortal, radiusOfPortal, 0));
+            corners.AddItem(new Vector3(radiusOfPortal, -radiusOfPortal, 0));
+            corners.AddItem(new Vector3(radiusOfPortal, radiusOfPortal, 0));
+
+
+            if (name == "portal1")
+            {
+                debugSphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                debugSphere.DestroyAllComponents<Collider>();
+                debugSphere.transform.parent = transform;
+                debugSphere.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
+                useDebugSphere = true;
+
+                /*
+                debugPlane = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                debugPlane.DestroyAllComponents<Collider>();
+                debugPlane.transform.parent = transform;
+                debugPlane.transform.localScale = new Vector3(3f, 3f, 0.1f);
+                */
+            }
+
+            plane = new Plane(-renderPlane.transform.forward, renderPlane.transform.position);
             if (playerCamera == null)
                 playerCamera = Locator.GetActiveCamera();
 
@@ -50,6 +83,8 @@ namespace First_Test_Mod.src
             cameras.Add(camera);
             camera.cullingMask = 4194321;
             camera.backgroundColor = Color.black;
+            //camera.projectionMatrix = Matrix4x4.Perspective(70f, Screen.width/Screen.height, 1, 100) * Matrix4x4.Rotate(Quaternion.Euler(0, -15, 0));
+            //camera.transform.rotation *= Quaternion.EulerRotation(0, 45, 0);
 
             if (portalShader == null)
             {
@@ -91,23 +126,40 @@ namespace First_Test_Mod.src
             newPos = output_portal_transform.TransformPoint(playerInLocal);
 
             outputPortalUp = output_portal_transform.rotation * Vector3.up;
-            Vector3 difference = playerCamera.transform.forward - transform.forward;
             newRot = Quaternion.LookRotation(-output_portal_transform.forward, outputPortalUp) * transform.InverseTransformRotation(playerCamera.transform.rotation);
+
+
+            
+            // Calculate clip distance to maximize camera through portal while minimizing rendering stuff between camera and portal
+            float radiusOfPortal = transform.localScale.x * (renderPlane.transform.localScale.x / 2f);
+
+            Plane clip = new Plane(camera.transform.forward, camera.transform.position);
+
+            // Find Closest Corner
+            Vector3 closestCorner = corners.OrderBy(x => clip.GetDistanceToPoint(output_portal_transform.TransformPoint(x))).First();
+            closestCorner = output_portal_transform.TransformPoint(closestCorner);
+
+            // Shift plane to be in line with corner
+            clip.distance -= clip.GetDistanceToPoint(closestCorner);
+
+            // Calculate distance between camera and plane
+            float closestDistance = -clip.GetDistanceToPoint(camera.transform.position);
+            
+
+            if (useDebugSphere)
+            {
+                if (counter % 10 == 0)
+                    NHLogger.Log($"Distance: {closestDistance}");
+                counter++;
+               // debugSphere.transform.position = output_portal_transform.TransformPoint(closestCorner);
+            }
 
             camera.transform.position = newPos;
             camera.transform.rotation = newRot;
+            camera.nearClipPlane = closestDistance;
+
             UpdateVisibility();
 
-        }
-
-        public void OnBecameVisible()
-        {
-            NHLogger.Log($"Portal {name} is now visible!");
-        }
-
-        public void OnBecameInvisible()
-        {
-            NHLogger.Log($"Portal {name} is no longer visible!");
         }
 
         public void UpdateVisibility()
