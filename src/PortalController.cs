@@ -39,7 +39,7 @@ namespace First_Test_Mod.src
         private GameObject debugPlane;
         private bool useDebugSphere;
         private int counter = 0;
-        private IEnumerable<Vector3> corners;
+        private List<Vector3> corners;
 
 
         public void Awake()
@@ -51,11 +51,16 @@ namespace First_Test_Mod.src
         public void Start()
         {
             float radiusOfPortal = transform.localScale.x * (renderPlane.transform.localScale.x / 2f);
-            corners = new Vector3[4];
-            corners.AddItem(new Vector3(-radiusOfPortal, -radiusOfPortal, 0));
-            corners.AddItem(new Vector3(-radiusOfPortal, radiusOfPortal, 0));
-            corners.AddItem(new Vector3(radiusOfPortal, -radiusOfPortal, 0));
-            corners.AddItem(new Vector3(radiusOfPortal, radiusOfPortal, 0));
+            NHLogger.LogError($"Radius is: {radiusOfPortal}");
+            corners = new List<Vector3>();
+            corners.Add(new Vector3(-radiusOfPortal, -radiusOfPortal, 0));
+            corners.Add(new Vector3(-radiusOfPortal, radiusOfPortal, 0));
+            corners.Add(new Vector3(radiusOfPortal, -radiusOfPortal, 0));
+            corners.Add(new Vector3(radiusOfPortal, radiusOfPortal, 0));
+            corners.ForEach(x =>
+            {
+                NHLogger.LogError($"Corner is {x}");
+            });
 
 
             if (name == "portal1")
@@ -138,20 +143,28 @@ namespace First_Test_Mod.src
             // Find Closest Corner
             Vector3 closestCorner = corners.OrderBy(x => clip.GetDistanceToPoint(output_portal_transform.TransformPoint(x))).First();
             closestCorner = output_portal_transform.TransformPoint(closestCorner);
+            //closestCorner = new Vector3(radiusOfPortal, radiusOfPortal, 0);
 
             // Shift plane to be in line with corner
-            clip.distance -= clip.GetDistanceToPoint(closestCorner);
+            //clip.distance -= clip.GetDistanceToPoint(closestCorner);
+            clip = new Plane(camera.transform.forward, closestCorner);
 
             // Calculate distance between camera and plane
             float closestDistance = -clip.GetDistanceToPoint(camera.transform.position);
+            closestDistance = closestDistance < 0.1f ? 0.1f : closestDistance;
             
 
             if (useDebugSphere)
             {
                 if (counter % 10 == 0)
-                    NHLogger.Log($"Distance: {closestDistance}");
+                {
+
+                    //NHLogger.Log($"Distance: {closestDistance}\nClosest Corner: {output_portal_transform.InverseTransformPoint(closestCorner)}");
+                    foreach (Vector3 corner in corners)
+                        NHLogger.Log($"Corner is {corner}");
+                }
                 counter++;
-               // debugSphere.transform.position = output_portal_transform.TransformPoint(closestCorner);
+               debugSphere.transform.position = closestCorner;
             }
 
             camera.transform.position = newPos;
