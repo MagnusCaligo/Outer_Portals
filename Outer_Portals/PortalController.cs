@@ -28,14 +28,14 @@ namespace First_Test_Mod.src
         public static OWCamera playerCamera;
         private static Shader portalShader;
         private static List<Camera> cameras = new List<Camera>();
-        private Renderer renderer;
         private bool lastVisibility = false;
         private VisibilityObject visibilityObject;
-        private Plane plane;
+        private bool doTransformations = true;
+        private FixPhysics physics;
+        private OWRigidbody body;
 
         // Corners for calculating clipping
         private List<Vector3> corners;
-
 
         public void Awake()
         {
@@ -45,20 +45,22 @@ namespace First_Test_Mod.src
 
         public void Start()
         {
+            // Setup Corners
             float radiusOfPortal = transform.localScale.x * (renderPlane.transform.localScale.x / 2f);
-            NHLogger.LogError($"Radius is: {radiusOfPortal}");
             corners = new List<Vector3>();
             corners.Add(new Vector3(-radiusOfPortal, -radiusOfPortal, 0));
             corners.Add(new Vector3(-radiusOfPortal, radiusOfPortal, 0));
             corners.Add(new Vector3(radiusOfPortal, -radiusOfPortal, 0));
             corners.Add(new Vector3(radiusOfPortal, radiusOfPortal, 0));
-            corners.ForEach(x =>
-            {
-                NHLogger.LogError($"Corner is {x}");
-            });
 
+            physics = gameObject.AddComponent<FixPhysics>();
+            body = GetComponentInParent<OWRigidbody>();
+            if (body == null)
+                throw new Exception("Body is null");
+           
+            body.FreezeRotation();
+            gameObject.GetComponentInParent<CenterOfTheUniverseOffsetApplier>();  // Makes sure that the portals move correctly at far distances;
 
-            plane = new Plane(-renderPlane.transform.forward, renderPlane.transform.position);
             if (playerCamera == null)
                 playerCamera = Locator.GetActiveCamera();
 
@@ -87,6 +89,9 @@ namespace First_Test_Mod.src
 
         public void FixedUpdate()
         {
+            UpdateVisibility();
+            if (!doTransformations)
+                return;
             Vector3 newPos;
             Quaternion newRot;
             Vector3 playerInLocal;
@@ -121,19 +126,58 @@ namespace First_Test_Mod.src
             //closestCorner = new Vector3(radiusOfPortal, radiusOfPortal, 0);
 
             // Shift plane to be in line with corner
-            //clip.distance -= clip.GetDistanceToPoint(closestCorner);
             clip = new Plane(camera.transform.forward, closestCorner);
 
             // Calculate distance between camera and plane
             float closestDistance = -clip.GetDistanceToPoint(camera.transform.position);
             closestDistance = closestDistance < 0.1f ? 0.1f : closestDistance;
 
-            camera.transform.position = newPos;
+            //camera.transform.position = newPos;
+            camera.transform.position = output_portal_transform.position;
             camera.transform.rotation = newRot;
             camera.nearClipPlane = closestDistance;
+        }
 
-            UpdateVisibility();
+        public void OnVisible()
+        {
+            camera.enabled = true;
+            doTransformations = true;
 
+            var linkedPortalSectorName = linkedPortal.sectorName;
+            if (linkedPortalSectorName == null)
+                return;
+            Sector sector = SectorManager.GetRegisteredSectors().Find(sector => sector.name.Equals(linkedPortalSectorName));
+            if (sector == null)
+                return;
+
+            // If the player is already there, no need to keep going
+            if (sector.ContainsOccupant(DynamicOccupant.Player))
+                return;
+
+
+            do
+            {
+                NHLogger.Log($"From portal: {name}, adding to sector {sector.name}");
+                sector.AddOccupant(Locator.GetPlayerSectorDetector());
+                sector = sector.GetParentSector();
+            } while (sector != null);
+        }
+        
+        public void OnInvisible()
+        {
+            camera.enabled = false;
+            doTransformations = false;
+            var linkedPortalSectorName = linkedPortal.sectorName;
+            if (linkedPortalSectorName == null)
+                return;
+            Sector sector = SectorManager.GetRegisteredSectors().Find(sector => sector.name.Equals(linkedPortalSectorName));
+            if (sector == null)
+                return;
+            do
+            {
+                //sector.RemoveOccupant(Locator.GetPlayerSectorDetector());
+                sector = sector.GetParentSector();
+            } while (sector != null);
         }
 
         public void UpdateVisibility()
@@ -144,38 +188,10 @@ namespace First_Test_Mod.src
                     return;
                 if (visibilityObject.IsVisible() && !lastVisibility)
                 {
-                    var linkedPortalSectorName = linkedPortal.sectorName;
-                    if (linkedPortalSectorName == null)
-                        return;
-                    Sector sector = SectorManager.GetRegisteredSectors().Find(sector => sector.name.Equals(linkedPortalSectorName));
-                    if (sector == null)
-                        return;
-
-                    // If the player is already there, no need to keep going
-                    if (sector.ContainsOccupant(DynamicOccupant.Player))
-                        return;
-                    
-
-                    do
-                    {
-                        NHLogger.Log($"From portal: {name}, adding to sector {sector.name}");
-                        sector.AddOccupant(Locator.GetPlayerSectorDetector());
-                        sector = sector.GetParentSector();
-                    } while (sector != null);
-                    
+                    OnVisible();
                 }else if(!visibilityObject.IsVisible() && lastVisibility)
                 {
-                    var linkedPortalSectorName = linkedPortal.sectorName;
-                    if (linkedPortalSectorName == null)
-                        return;
-                    Sector sector = SectorManager.GetRegisteredSectors().Find(sector => sector.name.Equals(linkedPortalSectorName));
-                    if (sector == null)
-                        return;
-                    do
-                    {
-                        //sector.RemoveOccupant(Locator.GetPlayerSectorDetector());
-                        sector = sector.GetParentSector();
-                    } while (sector != null); 
+                    OnInvisible();
                 }
                 lastVisibility = visibilityObject.IsVisible();
             }
