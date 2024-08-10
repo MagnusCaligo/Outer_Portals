@@ -132,8 +132,8 @@ namespace First_Test_Mod.src
             float closestDistance = -clip.GetDistanceToPoint(camera.transform.position);
             closestDistance = closestDistance < 0.1f ? 0.1f : closestDistance;
 
-            //camera.transform.position = newPos;
-            camera.transform.position = output_portal_transform.position;
+            camera.transform.position = newPos;
+            // camera.transform.position = output_portal_transform.position;
             camera.transform.rotation = newRot;
             camera.nearClipPlane = closestDistance;
         }
