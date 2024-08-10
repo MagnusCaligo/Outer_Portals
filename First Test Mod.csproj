@@ -49,7 +49,11 @@
   <ItemGroup>
     <Folder Include="assets\" />
   </ItemGroup>
+  <ItemGroup>
+    <Reference Include="lib\**" />
+  </ItemGroup>
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="copy /Y &quot;C:\Users\joe30\AppData\Roaming\OuterWildsModManager\OWML\Mods\Mags.First Test Mod\First Test Mod.dll&quot; &quot;F:\OuterWildsAssetRip\OuterWilds\ExportedProject\Assets\Dlls\&quot;" />
+    <Exec Command="copy /Y &quot;C:\Users\joe30\AppData\Roaming\OuterWildsModManager\OWML\Mods\Mags.First Test Mod\First Test Mod.dll&quot; &quot;F:\OuterWildsAssetRip\OuterWilds\ExportedProject\Assets\Dlls\&quot;" 
+    IgnoreExitCode="true"/>
   </Target>
 </Project>
