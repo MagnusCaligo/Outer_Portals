@@ -87,7 +87,9 @@ namespace First_Test_Mod.src
 
         }
 
-        public void FixedUpdate()
+        // you would think this should be in FixedUpdate since it depends on player movement,
+        // but doing that makes it lag one frame behind
+        public void Update()
         {
             UpdateVisibility();
             if (!doTransformations)
@@ -116,7 +118,7 @@ namespace First_Test_Mod.src
             newRot = Quaternion.LookRotation(-output_portal_transform.forward, outputPortalUp) * transform.InverseTransformRotation(playerCamera.transform.rotation);
             
             // Calculate clip distance to maximize camera through portal while minimizing rendering stuff between camera and portal
-            float radiusOfPortal = transform.localScale.x * (renderPlane.transform.localScale.x / 2f);
+            // float radiusOfPortal = transform.localScale.x * (renderPlane.transform.localScale.x / 2f);
 
             Plane clip = new Plane(camera.transform.forward, camera.transform.position);
 
