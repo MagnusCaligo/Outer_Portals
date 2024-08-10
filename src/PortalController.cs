@@ -25,8 +25,6 @@ namespace First_Test_Mod.src
         public bool linkedToSelf = false;
         public String sectorName;
 
-        //private SectorDetector sectorDetector;
-
         public static OWCamera playerCamera;
         private static Shader portalShader;
         private static List<Camera> cameras = new List<Camera>();
@@ -35,10 +33,7 @@ namespace First_Test_Mod.src
         private VisibilityObject visibilityObject;
         private Plane plane;
 
-        private GameObject debugSphere;
-        private GameObject debugPlane;
-        private bool useDebugSphere;
-        private int counter = 0;
+        // Corners for calculating clipping
         private List<Vector3> corners;
 
 
@@ -63,22 +58,6 @@ namespace First_Test_Mod.src
             });
 
 
-            if (name == "portal1")
-            {
-                debugSphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-                debugSphere.DestroyAllComponents<Collider>();
-                debugSphere.transform.parent = transform;
-                debugSphere.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
-                useDebugSphere = true;
-
-                /*
-                debugPlane = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                debugPlane.DestroyAllComponents<Collider>();
-                debugPlane.transform.parent = transform;
-                debugPlane.transform.localScale = new Vector3(3f, 3f, 0.1f);
-                */
-            }
-
             plane = new Plane(-renderPlane.transform.forward, renderPlane.transform.position);
             if (playerCamera == null)
                 playerCamera = Locator.GetActiveCamera();
@@ -88,8 +67,6 @@ namespace First_Test_Mod.src
             cameras.Add(camera);
             camera.cullingMask = 4194321;
             camera.backgroundColor = Color.black;
-            //camera.projectionMatrix = Matrix4x4.Perspective(70f, Screen.width/Screen.height, 1, 100) * Matrix4x4.Rotate(Quaternion.Euler(0, -15, 0));
-            //camera.transform.rotation *= Quaternion.EulerRotation(0, 45, 0);
 
             if (portalShader == null)
             {
@@ -132,8 +109,6 @@ namespace First_Test_Mod.src
 
             outputPortalUp = output_portal_transform.rotation * Vector3.up;
             newRot = Quaternion.LookRotation(-output_portal_transform.forward, outputPortalUp) * transform.InverseTransformRotation(playerCamera.transform.rotation);
-
-
             
             // Calculate clip distance to maximize camera through portal while minimizing rendering stuff between camera and portal
             float radiusOfPortal = transform.localScale.x * (renderPlane.transform.localScale.x / 2f);
@@ -152,20 +127,6 @@ namespace First_Test_Mod.src
             // Calculate distance between camera and plane
             float closestDistance = -clip.GetDistanceToPoint(camera.transform.position);
             closestDistance = closestDistance < 0.1f ? 0.1f : closestDistance;
-            
-
-            if (useDebugSphere)
-            {
-                if (counter % 10 == 0)
-                {
-
-                    //NHLogger.Log($"Distance: {closestDistance}\nClosest Corner: {output_portal_transform.InverseTransformPoint(closestCorner)}");
-                    foreach (Vector3 corner in corners)
-                        NHLogger.Log($"Corner is {corner}");
-                }
-                counter++;
-               debugSphere.transform.position = closestCorner;
-            }
 
             camera.transform.position = newPos;
             camera.transform.rotation = newRot;
