@@ -9,7 +9,9 @@
     <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
     <NoWarn>MSB3270</NoWarn>
     <DebugType>portable</DebugType>
-    <BaseOutputPath></BaseOutputPath>
+    
+    <!--temporary: makes it so that the dll name is the same as the old thing-->
+    <AssemblyName>First Test Mod</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="OWML" Version="2.13.0" />
@@ -24,15 +26,15 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="First Test Mod.csproj.user" />
+    <Content Include="Outer_Portals.csproj.user" />
   </ItemGroup>
   <ItemGroup>
     <None Include="planets\**\*.*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-	  <None Include="assets\**\*.*">
-		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </None>
+    <None Include="assets\**\*.*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="systems\**\*.*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -47,13 +49,10 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="assets\" />
-  </ItemGroup>
-  <ItemGroup>
     <Reference Include="lib\**" />
   </ItemGroup>
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="copy /Y &quot;C:\Users\joe30\AppData\Roaming\OuterWildsModManager\OWML\Mods\Mags.First Test Mod\First Test Mod.dll&quot; &quot;F:\OuterWildsAssetRip\OuterWilds\ExportedProject\Assets\Dlls\&quot;" 
-    IgnoreExitCode="true"/>
+    <Exec Command="copy /Y &quot;C:\Users\joe30\AppData\Roaming\OuterWildsModManager\OWML\Mods\Mags.First Test Mod\First Test Mod.dll&quot; &quot;F:\OuterWildsAssetRip\OuterWilds\ExportedProject\Assets\Dlls\&quot;"
+          IgnoreExitCode="true"/>
   </Target>
 </Project>
