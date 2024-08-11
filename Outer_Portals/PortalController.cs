@@ -11,6 +11,7 @@ using NewHorizons.Components;
 using NewHorizons.Utility.OWML;
 using HarmonyLib.Tools;
 using NewHorizons.Utility;
+using System.Drawing.Drawing2D;
 
 namespace First_Test_Mod.src
 {
@@ -36,6 +37,8 @@ namespace First_Test_Mod.src
 
         // Corners for calculating clipping
         private List<Vector3> corners;
+        private Rect viewportRect;
+        private int debugCount = 0;
 
         public void Awake()
         {
@@ -48,10 +51,10 @@ namespace First_Test_Mod.src
             // Setup Corners
             float radiusOfPortal = transform.localScale.x * (renderPlane.transform.localScale.x / 2f);
             corners = new List<Vector3>();
-            corners.Add(new Vector3(-radiusOfPortal, -radiusOfPortal, 0));
-            corners.Add(new Vector3(-radiusOfPortal, radiusOfPortal, 0));
-            corners.Add(new Vector3(radiusOfPortal, -radiusOfPortal, 0));
-            corners.Add(new Vector3(radiusOfPortal, radiusOfPortal, 0));
+            corners.Add(new Vector3(-radiusOfPortal, 0, 0));
+            corners.Add(new Vector3(-radiusOfPortal, 2*radiusOfPortal, 0));
+            corners.Add(new Vector3(radiusOfPortal, 0, 0));
+            corners.Add(new Vector3(radiusOfPortal, 2*radiusOfPortal, 0));
 
             physics = gameObject.AddComponent<FixPhysics>();
             body = GetComponentInParent<OWRigidbody>();
@@ -87,6 +90,75 @@ namespace First_Test_Mod.src
 
         }
 
+        public static void SetScissorRect(Camera cam, Rect r)
+        {
+            if (r.x < 0)
+            {
+                r.width += r.x;
+                r.x = 0;
+            }
+
+            if (r.y < 0)
+            {
+                r.height += r.y;
+                r.y = 0;
+            }
+
+            r.width = Mathf.Min(1 - r.x, r.width);
+            r.height = Mathf.Min(1 - r.y, r.height);
+
+            cam.rect = new Rect(0, 0, 1, 1);
+            cam.ResetProjectionMatrix();
+            Matrix4x4 m = Locator.GetPlayerCamera().mainCamera.projectionMatrix;
+            cam.rect = r;
+            Matrix4x4 m1 = Matrix4x4.TRS(new Vector3(r.x, r.y, 0), Quaternion.identity, new Vector3(r.width, r.height, 1));
+            Matrix4x4 m2 = Matrix4x4.TRS(new Vector3((1 / r.width - 1), (1 / r.height - 1), 0), Quaternion.identity, new Vector3(1 / r.width, 1 / r.height, 1));
+            Matrix4x4 m3 = Matrix4x4.TRS(new Vector3(-r.x * 2 / r.width, -r.y * 2 / r.height, 0), Quaternion.identity, Vector3.one);
+            //cam.projectionMatrix = m3 * m2 * m;
+            
+            /*
+            float inverseWidth = 1 / r.width;
+            float inverseHeight = 1 / r.height;
+            Matrix4x4 matrix1 = new Matrix4x4();
+            matrix1.SetTRS(
+                new Vector3(-r.x * 2 * inverseWidth, -r.y * 2 * inverseHeight, 0),
+                Quaternion.identity,
+                Vector3.one);
+            Matrix4x4 matrix2 = new Matrix4x4();
+            matrix2.SetTRS(
+                new Vector3(inverseWidth - 1, inverseHeight - 1, 0),
+                Quaternion.identity,
+                new Vector3(inverseWidth, cam.rect.height * inverseHeight, 1));
+            cam.projectionMatrix = matrix1 * matrix2 * m; */
+        }
+
+        public void CalculateViewportRect(Transform output_portal_transform)
+        {
+            Camera player_camera = Locator.GetPlayerCamera().mainCamera;
+            Vector3 left_most_point = corners.OrderBy(x => player_camera.WorldToScreenPoint(transform.TransformPoint(x)).x).First();
+            Vector3 right_most_point = corners.OrderBy(x => player_camera.WorldToScreenPoint(transform.TransformPoint(x)).x).Last();
+            Vector3 top_most_point = corners.OrderBy(x => player_camera.WorldToScreenPoint(transform.TransformPoint(x)).y).Last();
+            Vector3 bottom_most_point = corners.OrderBy(x => player_camera.WorldToScreenPoint(transform.TransformPoint(x)).y).First();
+
+            left_most_point = player_camera.WorldToScreenPoint(transform.TransformPoint(left_most_point));
+            right_most_point = player_camera.WorldToScreenPoint(transform.TransformPoint(right_most_point));
+            top_most_point = player_camera.WorldToScreenPoint(transform.TransformPoint(top_most_point));
+            bottom_most_point = player_camera.WorldToScreenPoint(transform.TransformPoint(bottom_most_point));
+
+            float bottom_point_x = Mathf.Clamp(left_most_point.x / Screen.width, 0, 1);
+            float bottom_point_y = Mathf.Clamp(bottom_most_point.y / Screen.height, 0, 1);
+            float width_value = Mathf.Clamp((right_most_point.x - left_most_point.x) / Screen.width, 0, 1);
+            float height_value = Mathf.Clamp((top_most_point.y - bottom_most_point.y) / Screen.height, 0, 1);
+
+
+            Rect rect = new Rect(bottom_point_x, bottom_point_y, width_value, height_value);
+            //rect = new Rect(.4f, .4f, .2f, .2f);
+            if (name == "th_to_ar" && debugCount % 10 == 0)
+                NHLogger.Log($"BottomMostPoint: {bottom_most_point}\nCamera Rect: {rect}");
+            debugCount++;
+            SetScissorRect(camera, rect);
+        }
+
         // you would think this should be in FixedUpdate since it depends on player movement,
         // but doing that makes it lag one frame behind
         public void Update()
@@ -99,6 +171,7 @@ namespace First_Test_Mod.src
             Vector3 playerInLocal;
             Vector3 outputPortalUp;
             Transform output_portal_transform;
+            
             if (linkedToSelf)
             {
                 output_portal_transform = transform;
@@ -109,6 +182,7 @@ namespace First_Test_Mod.src
                     return;
                 output_portal_transform = linkedPortal.transform;
             }
+            CalculateViewportRect(output_portal_transform);
 
             playerInLocal = transform.InverseTransformPoint(playerCamera.transform.position);
             playerInLocal = new Vector3(-playerInLocal.x, playerInLocal.y, -playerInLocal.z);  // Position on opposite side of portal
