@@ -34,8 +34,8 @@ namespace First_Test_Mod.src
 
         // Corners for calculating clipping
         private List<Vector3> corners;
-        private Rect viewportRect;
-        private int debugCount = 0;
+        // private Rect viewportRect;
+        // private int debugCount = 0;
         private static Camera playerCamera;
         private MeshRenderer meshRenderer;
 
@@ -54,6 +54,7 @@ namespace First_Test_Mod.src
             corners.Add(new Vector3(radiusOfPortal, 0, 0));
             corners.Add(new Vector3(radiusOfPortal, 2*radiusOfPortal, 0));
 
+            // im not sure what this is for. meshRenderer is unused
             meshRenderer = gameObject.GetAddComponent<MeshRenderer>();
             if (meshRenderer == null)
             {
@@ -66,6 +67,7 @@ namespace First_Test_Mod.src
             if (camera == null)
                 camera = gameObject.GetComponent<Camera>();
             cameras.Add(camera);
+            // TODO: do camera post processing properly, use nh Layer class for mask 
             camera.cullingMask = 4194321;
             camera.backgroundColor = Color.black;
             camera.farClipPlane = 5000;
@@ -95,7 +97,7 @@ namespace First_Test_Mod.src
             cam.ResetProjectionMatrix();
             Matrix4x4 m = cam.projectionMatrix;
             cam.rect = r;
-            cam.aspect = playerCamera.aspect;
+            cam.aspect = playerCamera.aspect; // does this need to be set here?
             
             Matrix4x4 m2 = Matrix4x4.TRS(new Vector3((1 / r.width - 1), (1 / r.height - 1), 0), Quaternion.identity, new Vector3(1 / r.width, 1 / r.height, 1));
             Matrix4x4 m3 = Matrix4x4.TRS(new Vector3(-r.x * 2 / r.width, -r.y * 2 / r.height, 0), Quaternion.identity, Vector3.one);
@@ -109,10 +111,12 @@ namespace First_Test_Mod.src
             List<Vector3> points_on_screen = new List<Vector3>();
             corners.ForEach(x => points_on_screen.Add(playerCamera.WorldToScreenPoint(transform.TransformPoint(x))));
             
+            /*
             Vector3 left_most_point = points_on_screen.OrderBy(x => x.x).First();
             Vector3 right_most_point = points_on_screen.OrderBy(x => x.x).Last();
             Vector3 top_most_point = points_on_screen.OrderBy(x => x.y).Last();
             Vector3 bottom_most_point = points_on_screen.OrderBy(x => x.y).First();
+            */
 
             Vector3 initialPoint = points_on_screen.OrderBy(x => x.z).Last();
 
@@ -123,9 +127,10 @@ namespace First_Test_Mod.src
 
             points_on_screen.ForEach(point =>
             {
+                // if behind the camera, they coords get flipped around, so fix that here
+                // it doesnt work all the time, but it does most of the time
                 if (point.z <= 0)
                 {
-
                     if (point.x <= Screen.width / 2f)
                         point.x = Screen.width;
                     else if (point.x > Screen.width / 2f)
@@ -146,10 +151,12 @@ namespace First_Test_Mod.src
                     yMax = point.y;
             });
 
+            /*
             float bottom_point_x = Mathf.Clamp(left_most_point.x / Screen.width, 0, 1);
             float bottom_point_y = Mathf.Clamp(bottom_most_point.y / Screen.height, 0, 1);
             float width_value = Mathf.Clamp((Mathf.Clamp(right_most_point.x, 0, Screen.width) - Mathf.Clamp(left_most_point.x, 0, Screen.width)) / Screen.width, 0, 1);
             float height_value = Mathf.Clamp((Mathf.Clamp(top_most_point.y, 0, Screen.height) - Mathf.Clamp(bottom_most_point.y, 0, Screen.height)) / Screen.height, 0, 1);
+            */
 
             xMin = Mathf.Clamp(xMin / Screen.width, 0, 1);
             xMax = Mathf.Clamp(xMax / Screen.width, 0, 1);
@@ -174,15 +181,10 @@ namespace First_Test_Mod.src
                 camera.enabled = false;
                 return;
             }
-            */
             camera.enabled = true;
+            */
 
-            Vector3 newPos;
-            Quaternion newRot;
-            Vector3 playerInLocal;
-            Vector3 outputPortalUp;
             Transform output_portal_transform;
-            
             if (linkedToSelf)
             {
                 output_portal_transform = transform;
@@ -193,34 +195,41 @@ namespace First_Test_Mod.src
                     return;
                 output_portal_transform = linkedPortal.transform;
             }
-            
 
-            playerInLocal = transform.InverseTransformPoint(playerCamera.transform.position);
-            playerInLocal = new Vector3(-playerInLocal.x, playerInLocal.y, -playerInLocal.z);  // Position on opposite side of portal
-            newPos = output_portal_transform.TransformPoint(playerInLocal);
-            if (linkedToSelf)
-                newPos += - 0.1f * output_portal_transform.forward;
+            // apply transformation based on player camera
+            {
+                var playerInLocal = transform.InverseTransformPoint(playerCamera.transform.position);
+                playerInLocal = new Vector3(-playerInLocal.x, playerInLocal.y, -playerInLocal.z); // Position on opposite side of portal
+                var newPos = output_portal_transform.TransformPoint(playerInLocal);
+                if (linkedToSelf)
+                    newPos += -0.1f * output_portal_transform.forward;
 
-            outputPortalUp = output_portal_transform.rotation * Vector3.up;
-            newRot = Quaternion.LookRotation(-output_portal_transform.forward, outputPortalUp) * transform.InverseTransformRotation(playerCamera.transform.rotation);
-            
+                var outputPortalUp = output_portal_transform.rotation * Vector3.up;
+                // this LookRotation has the same affect as rotating 180 degree and then doing TransformRotation
+                var newRot = Quaternion.LookRotation(-output_portal_transform.forward, outputPortalUp) * transform.InverseTransformRotation(playerCamera.transform.rotation);
+
+                camera.transform.position = newPos;
+                camera.transform.rotation = newRot;
+            }
+
             // Calculate clip distance to maximize camera through portal while minimizing rendering stuff between camera and portal
-            Plane clip = new Plane(camera.transform.forward, camera.transform.position);
+            {
+                Plane clip = new Plane(camera.transform.forward, camera.transform.position);
 
-            // Find Closest Corner
-            Vector3 closestCorner = corners.OrderBy(x => clip.GetDistanceToPoint(output_portal_transform.TransformPoint(x))).First();
-            closestCorner = output_portal_transform.TransformPoint(closestCorner);
+                // Find Closest Corner
+                Vector3 closestCorner = corners.OrderBy(x => clip.GetDistanceToPoint(output_portal_transform.TransformPoint(x))).First();
+                closestCorner = output_portal_transform.TransformPoint(closestCorner);
 
-            // Shift plane to be in line with corner
-            clip = new Plane(camera.transform.forward, closestCorner);
+                // Shift plane to be in line with corner
+                clip = new Plane(camera.transform.forward, closestCorner);
 
-            // Calculate distance between camera and plane
-            float closestDistance = -clip.GetDistanceToPoint(camera.transform.position);
-            closestDistance = closestDistance < 0.1f ? 0.1f : closestDistance;
+                // Calculate distance between camera and plane
+                float closestDistance = -clip.GetDistanceToPoint(camera.transform.position);
+                closestDistance = closestDistance < 0.1f ? 0.1f : closestDistance;
 
-            camera.transform.position = newPos;
-            camera.transform.rotation = newRot;
-            camera.nearClipPlane = closestDistance;
+                camera.nearClipPlane = closestDistance;
+            }
+            
             CalculateViewportRect();
         }
 
@@ -258,6 +267,12 @@ namespace First_Test_Mod.src
             Sector sector = SectorManager.GetRegisteredSectors().Find(sector => sector.name.Equals(linkedPortalSectorName));
             if (sector == null)
                 return;
+            
+            // If the player is already not there, no need to keep going
+            // i dont know if this breaks things
+            if (!sector.ContainsOccupant(DynamicOccupant.Player))
+                return;
+            
             do
             {
                 sector.RemoveOccupant(Locator.GetPlayerSectorDetector());
@@ -285,6 +300,7 @@ namespace First_Test_Mod.src
         public void OnDestroy()
         {
             cameras.Remove(camera);
+            // TODO: deallocate the material and whatnot
         }
 
         public static void linkPortals(PortalLinks links)
@@ -329,6 +345,7 @@ namespace First_Test_Mod.src
             }
         }
 
+        // TODO: this can probably be moved into Update
         [HarmonyPostfix]
         [HarmonyPatch(typeof(PlayerCameraController), nameof(PlayerCameraController.UpdateFieldOfView))]
         public static void matchFieldOfView()
