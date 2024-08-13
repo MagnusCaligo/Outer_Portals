@@ -37,6 +37,7 @@ namespace First_Test_Mod.src
         private Rect viewportRect;
         private int debugCount = 0;
         private static Camera playerCamera;
+        private MeshRenderer meshRenderer;
 
         public void Awake()
         {
@@ -53,6 +54,12 @@ namespace First_Test_Mod.src
             corners.Add(new Vector3(radiusOfPortal, 0, 0));
             corners.Add(new Vector3(radiusOfPortal, 2*radiusOfPortal, 0));
 
+            meshRenderer = gameObject.GetAddComponent<MeshRenderer>();
+            if (meshRenderer == null)
+            {
+                NHLogger.LogError("MESH RENDER IS NULL");
+            }
+
             if (playerCamera == null)
                 playerCamera = Locator.GetPlayerCamera().mainCamera;
 
@@ -61,6 +68,7 @@ namespace First_Test_Mod.src
             cameras.Add(camera);
             camera.cullingMask = 4194321;
             camera.backgroundColor = Color.black;
+            camera.farClipPlane = 5000;
 
 
             if (portalShader == null)
@@ -80,6 +88,7 @@ namespace First_Test_Mod.src
 
         }
 
+        // Made based off of this forum post: https://discussions.unity.com/t/how-do-i-render-only-a-part-of-the-cameras-view/23686/2
         public static void SetScissorRect(Camera cam, Rect r)
         {
             //Matrix4x4 m = Locator.GetPlayerCamera().mainCamera.projectionMatrix;
@@ -94,6 +103,7 @@ namespace First_Test_Mod.src
 
         }
 
+        // Written based off of this article: https://www.turiyaware.com/a-solution-to-unitys-camera-worldtoscreenpoint-causing-ui-elements-to-display-when-object-is-behind-the-camera/
         public void CalculateViewportRect()
         {
             List<Vector3> points_on_screen = new List<Vector3>();
@@ -158,6 +168,15 @@ namespace First_Test_Mod.src
             UpdateVisibility();
             if (!doTransformations)
                 return;
+            /*
+            if (!meshRenderer.isVisible)
+            {
+                camera.enabled = false;
+                return;
+            }
+            */
+            camera.enabled = true;
+
             Vector3 newPos;
             Quaternion newRot;
             Vector3 playerInLocal;
@@ -202,7 +221,6 @@ namespace First_Test_Mod.src
             camera.transform.position = newPos;
             camera.transform.rotation = newRot;
             camera.nearClipPlane = closestDistance;
-            camera.nearClipPlane = 0.1f;
             CalculateViewportRect();
         }
 
