@@ -21,12 +21,10 @@ namespace First_Test_Mod.src
 
         public Camera camera;
         public GameObject renderPlane;
-        private Material cameraMaterial;
         public PortalController linkedPortal;
         public bool linkedToSelf = false;
         public String sectorName;
 
-        private static Shader portalShader;
         private static List<Camera> cameras = new List<Camera>();
         private bool lastVisibility = false;
         private VisibilityObject visibilityObject;
@@ -37,12 +35,7 @@ namespace First_Test_Mod.src
         // private Rect viewportRect;
         // private int debugCount = 0;
         private static Camera playerCamera;
-        private MeshRenderer meshRenderer;
-
-        public void Awake()
-        {
-            portalShader = First_Test_Mod.Instance.shaderBundle.LoadAsset<Shader>("Assets/Custom Prefabs/PortalShader.shader");
-        }
+        // private MeshRenderer meshRenderer;
 
         public void Start()
         {
@@ -54,12 +47,13 @@ namespace First_Test_Mod.src
             corners.Add(new Vector3(radiusOfPortal, 0, 0));
             corners.Add(new Vector3(radiusOfPortal, 2*radiusOfPortal, 0));
 
-            // im not sure what this is for. meshRenderer is unused
+            /*
             meshRenderer = gameObject.GetAddComponent<MeshRenderer>();
             if (meshRenderer == null)
             {
                 NHLogger.LogError("MESH RENDER IS NULL");
             }
+            */
 
             if (playerCamera == null)
                 playerCamera = Locator.GetPlayerCamera().mainCamera;
@@ -72,22 +66,7 @@ namespace First_Test_Mod.src
             camera.backgroundColor = Color.black;
             camera.farClipPlane = 5000;
 
-
-            if (portalShader == null)
-            {
-                Debug.LogError("Shader not found! Setting to empty one.");
-                portalShader = Shader.Find("Unlit/Color");
-            }
-            cameraMaterial = new Material(portalShader);
-
-            if (camera.targetTexture != null)
-                camera.targetTexture.Release();
-            camera.targetTexture = new RenderTexture(Screen.width, Screen.height, 24);
-            cameraMaterial.mainTexture = camera.targetTexture;
-
-            renderPlane.GetComponent<MeshRenderer>().material = cameraMaterial;
             visibilityObject = renderPlane.GetComponent<VisibilityObject>();
-
         }
 
         // Made based off of this forum post: https://discussions.unity.com/t/how-do-i-render-only-a-part-of-the-cameras-view/23686/2
@@ -243,6 +222,15 @@ namespace First_Test_Mod.src
         {
             camera.enabled = true;
             doTransformations = true;
+
+            {
+                var cameraMaterial = new Material(First_Test_Mod.portalShader);
+
+                camera.targetTexture = new RenderTexture(Screen.width, Screen.height, 24);
+                cameraMaterial.mainTexture = camera.targetTexture;
+
+                renderPlane.GetComponent<MeshRenderer>().sharedMaterial = cameraMaterial;
+            }
             
             if (linkedPortal == null || true/*TEMP*/)
                 return;
@@ -270,7 +258,20 @@ namespace First_Test_Mod.src
         {
             camera.enabled = false;
             doTransformations = false;
-            
+
+            {
+                var cameraMaterial = renderPlane.GetComponent<MeshRenderer>().sharedMaterial;
+                var renderTexture = camera.targetTexture;
+
+                camera.targetTexture = null;
+                cameraMaterial.mainTexture = null;
+                renderPlane.GetComponent<MeshRenderer>().sharedMaterial = null;
+
+                renderTexture.Release();
+                DestroyImmediate(renderTexture);
+                DestroyImmediate(cameraMaterial);
+            }
+
             if (linkedPortal == null || true/*TEMP*/)
                 return;
 
@@ -315,7 +316,7 @@ namespace First_Test_Mod.src
         public void OnDestroy()
         {
             cameras.Remove(camera);
-            // TODO: deallocate the material and whatnot
+            OnInvisible(); // to deallocate
         }
 
         public static void linkPortals(PortalLinks links)

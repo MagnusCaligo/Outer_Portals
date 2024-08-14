@@ -16,7 +16,7 @@ public class First_Test_Mod : ModBehaviour
     public static First_Test_Mod Instance;
     public INewHorizons NewHorizons;
 
-    public AssetBundle shaderBundle;
+    public static Shader portalShader;
 
     public void Awake()
     {
@@ -38,9 +38,18 @@ public class First_Test_Mod : ModBehaviour
 
         new Harmony("Mags.First Test Mod").PatchAll(Assembly.GetExecutingAssembly());
 
+        {
+            var shaderBundle = ModHelper.Assets.LoadBundle("assets/portal/portal_shaders");
+            portalShader = shaderBundle.LoadAsset<Shader>("Assets/Custom Prefabs/PortalShader.shader");
+            if (portalShader == null)
+            {
+                Debug.LogError("Shader not found! Setting to empty one.");
+                portalShader = Shader.Find("Unlit/Color");
+            }
+        }
+
         // Example of accessing game code.
         OnCompleteSceneLoad(OWScene.TitleScreen, OWScene.TitleScreen); // We start on title screen
-        shaderBundle = ModHelper.Assets.LoadBundle("assets/portal/portal_shaders");
         LoadManager.OnCompleteSceneLoad += OnCompleteSceneLoad;
 
         var api = ModHelper.Interaction.TryGetModApi<INewHorizons>("xen.NewHorizons");
