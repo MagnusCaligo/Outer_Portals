@@ -58,8 +58,6 @@ namespace First_Test_Mod.src
             if (playerCamera == null)
                 playerCamera = Locator.GetPlayerCamera().mainCamera;
 
-            if (camera == null)
-                camera = gameObject.GetComponent<Camera>();
             cameras.Add(camera);
             // TODO: do camera post processing properly, use nh Layer class for mask 
             camera.cullingMask = 4194321;
