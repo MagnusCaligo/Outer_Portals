@@ -164,9 +164,10 @@ namespace First_Test_Mod.src
             yMin = Mathf.Clamp(yMin / Screen.height, 0, 1);
             yMax = Mathf.Clamp(yMax / Screen.height, 0, 1);
 
-            static float round(float x, float place) => Mathf.Ceil(x / place) * place;
+            // static float round(float x, float place) => Mathf.Ceil(x / place) * place;
             
-            Rect rect = new Rect(xMin, yMin, round(xMax - xMin, .5f), round(yMax - yMin, .5f));
+            // Rect rect = new Rect(xMin, yMin, round(xMax - xMin, .5f), round(yMax - yMin, .5f));
+            Rect rect = new Rect(xMin, yMin, xMax - xMin, yMax - yMin);
 
             SetScissorRect(camera, rect);
         }
