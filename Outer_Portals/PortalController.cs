@@ -38,6 +38,9 @@ namespace First_Test_Mod.src
         private int debugCount = 0;
         private static Camera playerCamera;
         private MeshRenderer meshRenderer;
+        private int currentLODValue = 0;
+        //private static float[] portalRectLODPercentagePoints = {0.01f, 0.05f, 0.10f, 0.15f, 0.20f, 0.25f, 0.35f, 0.40f, 0.45f, 0.50f, 0.55f, 0.60f, 0.65f, 0.75f, 0.80f, 0.85f, 0.90f, 0.95f, 1.0f };
+        private static float[] portalRectLODPercentagePoints = {0.01f, 0.10f, 0.50f, 1.0f };
 
         public void Awake()
         {
@@ -87,19 +90,27 @@ namespace First_Test_Mod.src
             visibilityObject = renderPlane.GetComponent<VisibilityObject>();
 
         }
+        public static bool RectContainsRect(Rect parentRect, Rect childRect)
+        {
+            // Checks to see if child rect is within the parent
+            return childRect.xMin >= parentRect.xMin
+                && childRect.yMin >= parentRect.yMin
+                && childRect.xMax <= parentRect.xMax
+                && childRect.yMax <= parentRect.yMax;
+        }
 
         // Made based off of this forum post: https://discussions.unity.com/t/how-do-i-render-only-a-part-of-the-cameras-view/23686/2
-        public static void SetScissorRect(Camera cam, Rect r)
+        public void SetScissorRect(Rect matrixRect, Rect cameraRect)
         {
             //Matrix4x4 m = Locator.GetPlayerCamera().mainCamera.projectionMatrix;
-            cam.ResetProjectionMatrix();
-            Matrix4x4 m = cam.projectionMatrix;
-            cam.rect = r;
-            cam.aspect = playerCamera.aspect;
+            camera.ResetProjectionMatrix();
+            Matrix4x4 m = camera.projectionMatrix;
+            camera.rect = cameraRect;
+            camera.aspect = playerCamera.aspect;
             
-            Matrix4x4 m2 = Matrix4x4.TRS(new Vector3((1 / r.width - 1), (1 / r.height - 1), 0), Quaternion.identity, new Vector3(1 / r.width, 1 / r.height, 1));
-            Matrix4x4 m3 = Matrix4x4.TRS(new Vector3(-r.x * 2 / r.width, -r.y * 2 / r.height, 0), Quaternion.identity, Vector3.one);
-            cam.projectionMatrix = m3 * m2 * m;
+            Matrix4x4 m2 = Matrix4x4.TRS(new Vector3((1 / matrixRect.width - 1), (1 / matrixRect.height - 1), 0), Quaternion.identity, new Vector3(1 / matrixRect.width, 1 / matrixRect.height, 1));
+            Matrix4x4 m3 = Matrix4x4.TRS(new Vector3(-matrixRect.x * 2 / matrixRect.width, -matrixRect.y * 2 / matrixRect.height, 0), Quaternion.identity, Vector3.one);
+            camera.projectionMatrix = m3 * m2 * m;
 
         }
 
@@ -156,18 +167,52 @@ namespace First_Test_Mod.src
             yMin = Mathf.Clamp(yMin / Screen.height, 0, 1);
             yMax = Mathf.Clamp(yMax / Screen.height, 0, 1);
 
-            Rect rect = new Rect(xMin, yMin, xMax - xMin, yMax - yMin);
+            Rect minimumRect= new Rect(xMin, yMin, xMax - xMin, yMax - yMin);
+            Rect rect = new Rect(xMin, yMin, portalRectLODPercentagePoints[currentLODValue], portalRectLODPercentagePoints[currentLODValue]);
 
-            SetScissorRect(camera, rect);
+            // Now that we know the minimum size we need to render, find the next LOD level
+            if (name == "th_to_ar" && debugCount % 10 == 0)
+            {
+                NHLogger.Log($"Minimum rect: {minimumRect}\nCurrentRect: {rect}");
+            }
+            while (minimumRect.width > rect.width || minimumRect.height > rect.height)
+            {
+                if (currentLODValue == portalRectLODPercentagePoints.Length - 1)
+                {
+                    NHLogger.LogError("Already at max rect, but need a bigger size! Something is wrong.");
+                    SetScissorRect(minimumRect, rect);
+                    return;
+                }
+                currentLODValue++;
+                rect = new Rect(xMin, yMin, portalRectLODPercentagePoints[currentLODValue], portalRectLODPercentagePoints[currentLODValue]);
+            }
+            // Check if we can downsize the rect
+
+            Rect smallerPossibleRect = new Rect(xMin, yMin, portalRectLODPercentagePoints[currentLODValue - 1], portalRectLODPercentagePoints[currentLODValue - 1]);
+            while (minimumRect.width < smallerPossibleRect.width && minimumRect.height < smallerPossibleRect.height)
+            {
+                if (currentLODValue == 0)
+                {
+                    NHLogger.LogError("Already at smallest rect, but need a smaller size! Something is wrong.");
+                    SetScissorRect(minimumRect, rect);
+                    return;
+                }
+                currentLODValue--;
+                rect = smallerPossibleRect;
+                smallerPossibleRect = new Rect(xMin, yMin, portalRectLODPercentagePoints[currentLODValue - 1], portalRectLODPercentagePoints[currentLODValue - 1]);
+            }
+            SetScissorRect(minimumRect, rect);
         }
 
         // you would think this should be in FixedUpdate since it depends on player movement,
         // but doing that makes it lag one frame behind
         public void Update()
         {
+            debugCount++;
             UpdateVisibility();
             if (!doTransformations)
                 return;
+            
             /*
             if (!meshRenderer.isVisible)
             {
@@ -175,6 +220,12 @@ namespace First_Test_Mod.src
                 return;
             }
             */
+            if (name == "th_to_ar" && debugCount % 10 == 0)
+            {
+                NHLogger.Log($"Portal LOD is {currentLODValue}");
+            }
+            
+            
             camera.enabled = true;
 
             Vector3 newPos;
