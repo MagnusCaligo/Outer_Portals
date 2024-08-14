@@ -109,6 +109,8 @@ namespace First_Test_Mod.src
         // Written based off of this article: https://www.turiyaware.com/a-solution-to-unitys-camera-worldtoscreenpoint-causing-ui-elements-to-display-when-object-is-behind-the-camera/
         public void CalculateViewportRect()
         {
+            return; // TEMP: setting rect lags the game a ton
+            
             List<Vector3> points_on_screen = new List<Vector3>();
             corners.ForEach(x => points_on_screen.Add(playerCamera.WorldToScreenPoint(transform.TransformPoint(x))));
             
