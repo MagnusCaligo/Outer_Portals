@@ -91,11 +91,12 @@ namespace First_Test_Mod.src
         }
 
         // Made based off of this forum post: https://discussions.unity.com/t/how-do-i-render-only-a-part-of-the-cameras-view/23686/2
-        public static void SetScissorRect(Camera cam, Rect r)
+        public void SetScissorRect(Camera cam, Rect r)
         {
             //Matrix4x4 m = Locator.GetPlayerCamera().mainCamera.projectionMatrix;
             cam.ResetProjectionMatrix();
             Matrix4x4 m = cam.projectionMatrix;
+            // if (cam.rect.size != r.size) NHLogger.Log($"changing {this} rect from {cam.rect} to {r}"); 
             cam.rect = r;
             cam.aspect = playerCamera.aspect; // does this need to be set here?
             
@@ -163,7 +164,9 @@ namespace First_Test_Mod.src
             yMin = Mathf.Clamp(yMin / Screen.height, 0, 1);
             yMax = Mathf.Clamp(yMax / Screen.height, 0, 1);
 
-            Rect rect = new Rect(xMin, yMin, xMax - xMin, yMax - yMin);
+            static float round(float x, float place) => Mathf.Ceil(x / place) * place;
+            
+            Rect rect = new Rect(xMin, yMin, round(xMax - xMin, .5f), round(yMax - yMin, .5f));
 
             SetScissorRect(camera, rect);
         }
@@ -237,7 +240,10 @@ namespace First_Test_Mod.src
         {
             camera.enabled = true;
             doTransformations = true;
-
+            
+            if (linkedPortal == null || true/*TEMP*/)
+                return;
+            
             var linkedPortalSectorName = linkedPortal.sectorName;
             if (linkedPortalSectorName == null)
                 return;
@@ -261,12 +267,18 @@ namespace First_Test_Mod.src
         {
             camera.enabled = false;
             doTransformations = false;
+            
+            if (linkedPortal == null || true/*TEMP*/)
+                return;
+
             var linkedPortalSectorName = linkedPortal.sectorName;
             if (linkedPortalSectorName == null)
                 return;
             Sector sector = SectorManager.GetRegisteredSectors().Find(sector => sector.name.Equals(linkedPortalSectorName));
             if (sector == null)
                 return;
+
+            return; // TEMP: sector unloading sometimes unloads the player from its own sector teehe
             
             // If the player is already not there, no need to keep going
             // i dont know if this breaks things
@@ -284,13 +296,13 @@ namespace First_Test_Mod.src
         {
             if (visibilityObject != null)
             {
-                if (linkedPortal == null)
-                    return;
                 if (visibilityObject.IsVisible() && !lastVisibility)
                 {
+                    // NHLogger.Log($"{this} visible");
                     OnVisible();
                 }else if(!visibilityObject.IsVisible() && lastVisibility)
                 {
+                    // NHLogger.Log($"{this} invisible");
                     OnInvisible();
                 }
                 lastVisibility = visibilityObject.IsVisible();
