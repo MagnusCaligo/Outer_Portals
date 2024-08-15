@@ -25,7 +25,7 @@ namespace First_Test_Mod.src
         public bool linkedToSelf = false;
         public String sectorName;
 
-        private static List<Camera> cameras = new List<Camera>();
+        private static readonly List<Camera> cameras = new List<Camera>();
         private bool lastVisibility = false;
         private VisibilityObject visibilityObject;
         private bool doTransformations = true;
@@ -36,6 +36,8 @@ namespace First_Test_Mod.src
         // private int debugCount = 0;
         private static Camera playerCamera;
         // private MeshRenderer meshRenderer;
+
+        private readonly List<Sector> alreadyOccupiedSectors = new();
 
         public void Start()
         {
@@ -229,27 +231,25 @@ namespace First_Test_Mod.src
 
                 renderPlane.GetComponent<MeshRenderer>().sharedMaterial = cameraMaterial;
             }
-            
-            if (linkedPortal == null || true/*TEMP*/)
+
+            if (linkedPortal == null)
                 return;
             
             var linkedPortalSectorName = linkedPortal.sectorName;
             if (linkedPortalSectorName == null)
                 return;
-            Sector sector = SectorManager.GetRegisteredSectors().Find(sector => sector.name.Equals(linkedPortalSectorName));
-            if (sector == null)
-                return;
+            var sector = SectorManager.GetRegisteredSectors().Find(sector => sector.name == linkedPortalSectorName);
 
-            // If the player is already there, no need to keep going
-            if (sector.ContainsOccupant(DynamicOccupant.Player))
-                return;
-
-            do
+            // the same strategy NomaiRemoteCameraPlatform uses
+            alreadyOccupiedSectors.Clear();
+            while (sector != null)
             {
-                NHLogger.Log($"From portal: {name}, adding to sector {sector.name}");
+                // NHLogger.Log($"From portal: {name}, adding to sector {sector.name}");
+                if (sector.ContainsOccupant(DynamicOccupant.Player))
+                    alreadyOccupiedSectors.Add(sector);
                 sector.AddOccupant(Locator.GetPlayerSectorDetector());
                 sector = sector.GetParentSector();
-            } while (sector != null);
+            }
         }
         
         public void OnInvisible()
@@ -270,28 +270,20 @@ namespace First_Test_Mod.src
                 DestroyImmediate(cameraMaterial);
             }
 
-            if (linkedPortal == null || true/*TEMP*/)
+            if (linkedPortal == null)
                 return;
-
+            
             var linkedPortalSectorName = linkedPortal.sectorName;
             if (linkedPortalSectorName == null)
                 return;
-            Sector sector = SectorManager.GetRegisteredSectors().Find(sector => sector.name.Equals(linkedPortalSectorName));
-            if (sector == null)
-                return;
+            var sector = SectorManager.GetRegisteredSectors().Find(sector => sector.name == linkedPortalSectorName);
 
-            return; // TEMP: sector unloading sometimes unloads the player from its own sector teehe
-            
-            // If the player is already not there, no need to keep going
-            // i dont know if this breaks things
-            if (!sector.ContainsOccupant(DynamicOccupant.Player))
-                return;
-            
-            do
+            while (sector != null)
             {
-                sector.RemoveOccupant(Locator.GetPlayerSectorDetector());
+                if (!alreadyOccupiedSectors.Contains(sector))
+                    sector.RemoveOccupant(Locator.GetPlayerSectorDetector());
                 sector = sector.GetParentSector();
-            } while (sector != null);
+            }
         }
 
         public void UpdateVisibility()
@@ -300,11 +292,11 @@ namespace First_Test_Mod.src
             {
                 if (visibilityObject.IsVisible() && !lastVisibility)
                 {
-                    // NHLogger.Log($"{this} visible");
+                    NHLogger.Log($"{this} visible");
                     OnVisible();
                 }else if(!visibilityObject.IsVisible() && lastVisibility)
                 {
-                    // NHLogger.Log($"{this} invisible");
+                    NHLogger.Log($"{this} invisible");
                     OnInvisible();
                 }
                 lastVisibility = visibilityObject.IsVisible();
