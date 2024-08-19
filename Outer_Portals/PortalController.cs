@@ -12,6 +12,7 @@ using NewHorizons.Utility.OWML;
 using HarmonyLib.Tools;
 using NewHorizons.Utility;
 using System.Drawing.Drawing2D;
+using UnityEngine.Rendering;
 
 namespace First_Test_Mod.src
 {
@@ -29,6 +30,7 @@ namespace First_Test_Mod.src
         private bool lastVisibility = false;
         private VisibilityObject visibilityObject;
         private bool doTransformations = true;
+        private Material material;
 
         // Corners for calculating clipping
         private List<Vector3> corners;
@@ -76,9 +78,23 @@ namespace First_Test_Mod.src
             cam.ResetProjectionMatrix();
             Matrix4x4 m = cam.projectionMatrix;
             // if (cam.rect.size != r.size) NHLogger.Log($"changing {this} rect from {cam.rect} to {r}"); 
-            cam.rect = r;
+            //cam.rect = r;
+            /*
+            var cb = new CommandBuffer();
+            cam.RemoveAllCommandBuffers();
+            cb.EnableScissorRect(new Rect(Screen.width * r.x, Screen.height * r.y, Screen.width * r.width, Screen.height * r.height));
+            cam.AddCommandBuffer(CameraEvent.BeforeDepthTexture, cb);
             cam.aspect = playerCamera.aspect; // does this need to be set here?
-            
+            */
+
+
+            cam.rect = r;
+            cam.aspect = playerCamera.aspect;
+
+            //renderPlane.GetComponent<MeshRenderer>().sharedMaterial.SetVector("_ViewportRect", new Vector4(r.x, r.y, 1/r.width, 1/r.height));
+            //material.SetVector("_ViewportRect", new Vector4(r.x, r.y, 1 / r.width, 1 / r.height));
+
+
             Matrix4x4 m2 = Matrix4x4.TRS(new Vector3((1 / r.width - 1), (1 / r.height - 1), 0), Quaternion.identity, new Vector3(1 / r.width, 1 / r.height, 1));
             Matrix4x4 m3 = Matrix4x4.TRS(new Vector3(-r.x * 2 / r.width, -r.y * 2 / r.height, 0), Quaternion.identity, Vector3.one);
             cam.projectionMatrix = m3 * m2 * m;
@@ -88,7 +104,7 @@ namespace First_Test_Mod.src
         // Written based off of this article: https://www.turiyaware.com/a-solution-to-unitys-camera-worldtoscreenpoint-causing-ui-elements-to-display-when-object-is-behind-the-camera/
         public void CalculateViewportRect()
         {
-            return; // TEMP: setting rect lags the game a ton
+            //return; // TEMP: setting rect lags the game a ton
             
             List<Vector3> points_on_screen = new List<Vector3>();
             corners.ForEach(x => points_on_screen.Add(playerCamera.WorldToScreenPoint(transform.TransformPoint(x))));
@@ -149,6 +165,7 @@ namespace First_Test_Mod.src
             
             // Rect rect = new Rect(xMin, yMin, round(xMax - xMin, .5f), round(yMax - yMin, .5f));
             Rect rect = new Rect(xMin, yMin, xMax - xMin, yMax - yMin);
+            //Rect rect = new Rect(0.1f, 0.1f, 0.8f, 0.8f);
 
             SetScissorRect(camera, rect);
         }
@@ -230,6 +247,7 @@ namespace First_Test_Mod.src
                 cameraMaterial.mainTexture = camera.targetTexture;
 
                 renderPlane.GetComponent<MeshRenderer>().sharedMaterial = cameraMaterial;
+                material = cameraMaterial;
             }
 
             if (linkedPortal == null)
@@ -264,6 +282,7 @@ namespace First_Test_Mod.src
                 camera.targetTexture = null;
                 cameraMaterial.mainTexture = null;
                 renderPlane.GetComponent<MeshRenderer>().sharedMaterial = null;
+                material = null;
 
                 renderTexture.Release();
                 DestroyImmediate(renderTexture);
