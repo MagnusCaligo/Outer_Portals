@@ -29,6 +29,7 @@ namespace First_Test_Mod.src
         private bool lastVisibility = false;
         private VisibilityObject visibilityObject;
         private bool doTransformations = true;
+        private List<OWRigidbody> teleportationOccupants;
 
         // Corners for calculating clipping
         private List<Vector3> corners;
@@ -67,6 +68,7 @@ namespace First_Test_Mod.src
             camera.farClipPlane = 5000;
 
             visibilityObject = renderPlane.GetComponent<VisibilityObject>();
+            teleportationOccupants = new List<OWRigidbody>();
         }
 
         // Made based off of this forum post: https://discussions.unity.com/t/how-do-i-render-only-a-part-of-the-cameras-view/23686/2
@@ -151,6 +153,11 @@ namespace First_Test_Mod.src
             Rect rect = new Rect(xMin, yMin, xMax - xMin, yMax - yMin);
 
             SetScissorRect(camera, rect);
+        }
+
+        public void FixedUpdate()
+        {
+            UpdateTeleportOccupants();
         }
 
         // you would think this should be in FixedUpdate since it depends on player movement,

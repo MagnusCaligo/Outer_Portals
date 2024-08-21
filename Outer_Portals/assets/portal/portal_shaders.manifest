@@ -1,9 +1,9 @@
 ManifestFileVersion: 0
-CRC: 894791930
+CRC: 1108666132
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 566c20aa64fccf8e3d3d9c10d71dba15
+    Hash: dff63fe24f1cf36b8df9af39387153ca
   TypeTreeHash:
     serializedVersion: 2
     Hash: 55d48f4ad9c3b13330b9eb5ee5686477
@@ -15,4 +15,4 @@ SerializeReferenceClassIdentifiers: []
 Assets:
 - Assets/Custom Prefabs/PortalShader.shader
 Dependencies:
-- C:/Users/joe30/source/repos/First Test Mod/assets/portal/portal_props
+- C:/Users/joe30/source/repos/First Test Mod/Outer_Portals/assets/portal/portal_props
