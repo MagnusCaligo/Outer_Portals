@@ -21,10 +21,10 @@ public static class RelativeTransformUtil
 		refBody.transform.InverseTransformDirection(vel - refBody.GetPointVelocity(pos));
 
 	public static Vector3 FromRelVel(this OWRigidbody refBody, Vector3 relVel, Vector3 pos) =>
-		refBody.GetPointVelocity(pos) + refBody.transform.TransformDirection(relVel);
+		refBody.GetPointVelocity(pos) + (relVel);
 
 	public static Vector3 ToRelAngVel(this OWRigidbody refBody, Vector3 angVel) =>
-		refBody.transform.InverseTransformDirection(angVel - refBody.GetAngularVelocity());
+		(angVel - refBody.GetAngularVelocity());
 
 	public static Vector3 FromRelAngVel(this OWRigidbody refBody, Vector3 relAngVel) =>
 		refBody.GetAngularVelocity() + refBody.transform.TransformDirection(relAngVel);

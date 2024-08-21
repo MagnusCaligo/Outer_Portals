@@ -107,8 +107,11 @@ namespace First_Test_Mod.src
 
         public void UpdateTeleportOccupants()
         {
-            foreach (var occupant in teleportationOccupants)
+            // iterate backwards since we remove
+            for (var i = teleportationOccupants.Count - 1; i >= 0; i--)
             {
+                var occupant = teleportationOccupants[i];
+                
                 Vector3 direction = transform.position - occupant.transform.position;
                 if (Vector3.Dot(transform.up, direction) < 0)
                 {
@@ -135,9 +138,10 @@ namespace First_Test_Mod.src
                     var newPos = linkedPortalTransform.FromRelPos(halfTurn * relPos);
                     occupant.SetPosition(newPos);
                     occupant.SetRotation(linkedPortalTransform.FromRelRot(halfTurn * relRot));
+                    NHLogger.Log($"{relVel} -> {halfTurn * relVel} ({occupant.GetVelocity()} -> {linkedPortalTransform.GetAttachedOWRigidbody().FromRelVel(halfTurn * relVel, newPos)}");
                     occupant.SetVelocity(linkedPortalTransform.GetAttachedOWRigidbody().FromRelVel(halfTurn * relVel, newPos));
                     occupant.SetAngularVelocity(linkedPortalTransform.GetAttachedOWRigidbody().FromRelAngVel(halfTurn * relAngVel));
-                    
+
                     /*
                     Vector3 positionDifference = transform.InverseTransformPoint(occupant.transform.position);
                     positionDifference = new Vector3(-positionDifference.x,positionDifference.y, -positionDifference.z);
@@ -154,9 +158,8 @@ namespace First_Test_Mod.src
 
                     if (linkedToSelf)
                     {
-                        teleportationOccupants.Remove(occupant);
+                        teleportationOccupants.RemoveAt(i);
                     }
-
                 }
             }
         }
