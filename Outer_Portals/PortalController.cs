@@ -15,6 +15,7 @@ using System.Drawing.Drawing2D;
 
 namespace First_Test_Mod.src
 {
+    // see https://github.com/TerrificTrifid/ow-nh-quasar-project/blob/main/QuasarProject/PortalController.cs as well
     [HarmonyPatch]
     internal class PortalController : MonoBehaviour
     {
@@ -39,6 +40,8 @@ namespace First_Test_Mod.src
         // private MeshRenderer meshRenderer;
 
         private readonly List<Sector> alreadyOccupiedSectors = new();
+        
+        private static readonly Quaternion halfTurn = Quaternion.Euler(0.0f, 180.0f, 0.0f);
 
         public void Start()
         {
@@ -69,7 +72,6 @@ namespace First_Test_Mod.src
 
             visibilityObject = renderPlane.GetComponent<VisibilityObject>();
             teleportationOccupants = new List<OWRigidbody>();
-            handledOccupants = new List<OWRigidbody>();
 
             var triggerVolume = gameObject.GetComponent<OWTriggerVolume>();
             if (triggerVolume != null)
@@ -87,7 +89,7 @@ namespace First_Test_Mod.src
             if (component.CompareTag("PlayerDetector") || component.CompareTag("ProbeDetector"))
             {
                 var body = obj.GetComponentInParent<OWRigidbody>();
-                teleportationOccupants.Add(obj.GetComponentInParent<OWRigidbody>());
+                teleportationOccupants.Add(body);
             }
         }
 
@@ -124,6 +126,19 @@ namespace First_Test_Mod.src
                         linkedPortalTransform = transform;
                     }
 
+                    var oldPos = occupant.GetPosition();
+                    var relPos = transform.ToRelPos(oldPos);
+                    var relRot = transform.ToRelRot(occupant.GetRotation());
+                    var relVel = transform.GetAttachedOWRigidbody().ToRelVel(occupant.GetVelocity(), oldPos);
+                    var relAngVel = transform.GetAttachedOWRigidbody().ToRelAngVel(occupant.GetAngularVelocity());
+
+                    var newPos = linkedPortalTransform.FromRelPos(halfTurn * relPos);
+                    occupant.SetPosition(newPos);
+                    occupant.SetRotation(linkedPortalTransform.FromRelRot(halfTurn * relRot));
+                    occupant.SetVelocity(linkedPortalTransform.GetAttachedOWRigidbody().FromRelVel(halfTurn * relVel, newPos));
+                    occupant.SetAngularVelocity(linkedPortalTransform.GetAttachedOWRigidbody().FromRelAngVel(halfTurn * relAngVel));
+                    
+                    /*
                     Vector3 positionDifference = transform.InverseTransformPoint(occupant.transform.position);
                     positionDifference = new Vector3(-positionDifference.x,positionDifference.y, -positionDifference.z);
 
@@ -135,6 +150,7 @@ namespace First_Test_Mod.src
                     occupant.transform.rotation = newRot;
                     occupant.SetVelocity((newRot * relativeVelocity) + linkedPortalTransform.GetAttachedOWRigidbody().GetPointVelocity(linkedPortalTransform.position));
                     //occupant.SetVelocity(rotationDifference * relativeVelocity);
+                    */
 
                     if (linkedToSelf)
                     {
@@ -264,6 +280,13 @@ namespace First_Test_Mod.src
 
             // apply transformation based on player camera
             {
+                var relPos = transform.ToRelPos(playerCamera.transform.position);
+                var relRot = transform.ToRelRot(playerCamera.transform.rotation);
+
+                camera.transform.position = output_portal_transform.FromRelPos(halfTurn * relPos);
+                camera.transform.rotation = output_portal_transform.FromRelRot(halfTurn * relRot);
+                
+                /*
                 var playerInLocal = transform.InverseTransformPoint(playerCamera.transform.position);
                 playerInLocal = new Vector3(-playerInLocal.x, playerInLocal.y, -playerInLocal.z); // Position on opposite side of portal
                 var newPos = output_portal_transform.TransformPoint(playerInLocal);
@@ -276,6 +299,7 @@ namespace First_Test_Mod.src
 
                 camera.transform.position = newPos;
                 camera.transform.rotation = newRot;
+                */
             }
 
             // Calculate clip distance to maximize camera through portal while minimizing rendering stuff between camera and portal
