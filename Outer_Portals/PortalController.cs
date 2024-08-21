@@ -69,6 +69,80 @@ namespace First_Test_Mod.src
 
             visibilityObject = renderPlane.GetComponent<VisibilityObject>();
             teleportationOccupants = new List<OWRigidbody>();
+            handledOccupants = new List<OWRigidbody>();
+
+            var triggerVolume = gameObject.GetComponent<OWTriggerVolume>();
+            if (triggerVolume != null)
+            {
+                triggerVolume.OnEntry += onEntryTeleporationPlane;
+                triggerVolume.OnExit += onLeaveTeleportationPlane;
+            }
+
+        }
+
+        public void onEntryTeleporationPlane(GameObject obj)
+        {
+            NHLogger.Log("Entered trigger volume");
+            OWCollider component = obj.GetComponent<OWCollider>();
+            if (component.CompareTag("PlayerDetector") || component.CompareTag("ProbeDetector"))
+            {
+                var body = obj.GetComponentInParent<OWRigidbody>();
+                teleportationOccupants.Add(obj.GetComponentInParent<OWRigidbody>());
+            }
+        }
+
+        public void onLeaveTeleportationPlane(GameObject obj)
+        {
+            NHLogger.Log("Leave Trigger Volume");
+            OWCollider component = obj.GetComponent<OWCollider>();
+            if (component.CompareTag("PlayerDetector") || component.CompareTag("ProbeDetector"))
+            {
+                var body = obj.GetComponentInParent<OWRigidbody>();
+                if (teleportationOccupants.Contains(body))
+                    teleportationOccupants.Remove(body);
+            }
+        }
+
+        public void UpdateTeleportOccupants()
+        {
+            foreach (var occupant in teleportationOccupants)
+            {
+                Vector3 direction = transform.position - occupant.transform.position;
+                if (Vector3.Dot(transform.up, direction) < 0)
+                {
+                    NHLogger.Log("Should have teleported!");
+                    Quaternion rotationDifference;
+                    Transform linkedPortalTransform;
+                    if (linkedPortal != null && !linkedToSelf)
+                    {
+                        rotationDifference = transform.rotation * Quaternion.Inverse(linkedPortal.transform.rotation) * Quaternion.AngleAxis(180, linkedPortal.transform.up);
+                        linkedPortalTransform = linkedPortal.transform;
+                    }
+                    else
+                    {
+                        rotationDifference = Quaternion.AngleAxis(180, transform.up);
+                        linkedPortalTransform = transform;
+                    }
+
+                    Vector3 positionDifference = transform.InverseTransformPoint(occupant.transform.position);
+                    positionDifference = new Vector3(-positionDifference.x,positionDifference.y, -positionDifference.z);
+
+                    var newRot = Quaternion.LookRotation(-linkedPortalTransform.forward, linkedPortalTransform.up) * transform.InverseTransformRotation(occupant.transform.rotation);
+                    //var newRot = occupant.transform.rotation * Quaternion.LookRotation(-linkedPortalTransform.forward, linkedPortalTransform.up);
+                    Vector3 relativeVelocity =  occupant.GetVelocity() - transform.GetAttachedOWRigidbody().GetPointVelocity(transform.position);
+
+                    occupant.transform.position = linkedPortalTransform.TransformPoint(positionDifference);
+                    occupant.transform.rotation = newRot;
+                    occupant.SetVelocity((newRot * relativeVelocity) + linkedPortalTransform.GetAttachedOWRigidbody().GetPointVelocity(linkedPortalTransform.position));
+                    //occupant.SetVelocity(rotationDifference * relativeVelocity);
+
+                    if (linkedToSelf)
+                    {
+                        teleportationOccupants.Remove(occupant);
+                    }
+
+                }
+            }
         }
 
         // Made based off of this forum post: https://discussions.unity.com/t/how-do-i-render-only-a-part-of-the-cameras-view/23686/2
