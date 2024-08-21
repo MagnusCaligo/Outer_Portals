@@ -141,6 +141,8 @@ namespace First_Test_Mod.src
                     NHLogger.Log($"{relVel} -> {halfTurn * relVel} ({occupant.GetVelocity()} -> {linkedPortalTransform.GetAttachedOWRigidbody().FromRelVel(halfTurn * relVel, newPos)}");
                     occupant.SetVelocity(linkedPortalTransform.GetAttachedOWRigidbody().FromRelVel(halfTurn * relVel, newPos));
                     occupant.SetAngularVelocity(linkedPortalTransform.GetAttachedOWRigidbody().FromRelAngVel(halfTurn * relAngVel));
+                    
+                    if (!Physics.autoSyncTransforms) Physics.SyncTransforms(); // or else "Player grounded spherecast" complains
 
                     /*
                     Vector3 positionDifference = transform.InverseTransformPoint(occupant.transform.position);
