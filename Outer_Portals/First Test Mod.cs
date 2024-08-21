@@ -8,6 +8,8 @@ using System.Reflection;
 using UnityEngine;
 using UnityEngine.Rendering;
 using NewHorizons;
+using NewHorizons.Utility.OuterWilds;
+using NewHorizons.Utility.OWML;
 
 namespace First_Test_Mod;
 [HarmonyPatch]
@@ -66,6 +68,16 @@ public class First_Test_Mod : ModBehaviour
             });
     }
 
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(ProbeLauncher), nameof(ProbeLauncher.LaunchProbe))]
+    public static void onLaunchProbe()
+    {
+
+        // Set Probe layer so its visible in the portals
+        var probe = Locator.GetProbe().transform.Find("CameraPivot/Geometry/Props_HEA_Probe_ANIM/Props_HEA_Probe");
+        if (probe != null)
+            probe.gameObject.layer = Layer.Default;
+    }
 
 
     public void OnCompleteSceneLoad(OWScene previousScene, OWScene newScene)
@@ -82,7 +94,6 @@ public class First_Test_Mod : ModBehaviour
         yield return new WaitForSeconds(3);
         movement_unlocked();
     }
-
 
     public static void movement_unlocked()
     {
