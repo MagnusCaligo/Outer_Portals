@@ -118,15 +118,15 @@ namespace First_Test_Mod.src
                     NHLogger.Log("Should have teleported!");
                     Quaternion rotationDifference;
                     Transform linkedPortalTransform;
-                    if (linkedPortal != null && !linkedToSelf)
-                    {
-                        rotationDifference = transform.rotation * Quaternion.Inverse(linkedPortal.transform.rotation) * Quaternion.AngleAxis(180, linkedPortal.transform.up);
-                        linkedPortalTransform = linkedPortal.transform;
-                    }
-                    else
+                    if (linkedToSelf || linkedPortal == null)
                     {
                         rotationDifference = Quaternion.AngleAxis(180, transform.up);
                         linkedPortalTransform = transform;
+                    }
+                    else
+                    {
+                        rotationDifference = transform.rotation * Quaternion.Inverse(linkedPortal.transform.rotation) * Quaternion.AngleAxis(180, linkedPortal.transform.up);
+                        linkedPortalTransform = linkedPortal.transform;
                     }
 
                     var oldPos = occupant.GetPosition();
@@ -272,14 +272,12 @@ namespace First_Test_Mod.src
             */
 
             Transform output_portal_transform;
-            if (linkedToSelf)
+            if (linkedToSelf || linkedPortal == null)
             {
                 output_portal_transform = transform;
             }
             else
             {
-                if (linkedPortal == null)
-                    return;
                 output_portal_transform = linkedPortal.transform;
             }
 
