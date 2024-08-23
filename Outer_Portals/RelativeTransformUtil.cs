@@ -17,15 +17,17 @@ public static class RelativeTransformUtil
 	public static Quaternion FromRelRot(this Transform refTransform, Quaternion relRot) =>
 		refTransform.TransformRotation(relRot);
 
-	public static Vector3 ToRelVel(this OWRigidbody refBody, Vector3 vel, Vector3 pos) =>
-		refBody.transform.InverseTransformDirection(vel - refBody.GetPointVelocity(pos));
+	// CHANGED
+	// we want it relative to a specific transform, not just the body center
+	public static Vector3 ToRelVel(this Transform refTransform, Vector3 vel, Vector3 pos) =>
+		refTransform.InverseTransformDirection(vel - refTransform.GetAttachedOWRigidbody().GetPointVelocity(pos));
 
-	public static Vector3 FromRelVel(this OWRigidbody refBody, Vector3 relVel, Vector3 pos) =>
-		refBody.GetPointVelocity(pos) + refBody.transform.TransformDirection(relVel);
+	public static Vector3 FromRelVel(this Transform refTransform, Vector3 relVel, Vector3 pos) =>
+		refTransform.GetAttachedOWRigidbody().GetPointVelocity(pos) + refTransform.TransformDirection(relVel);
 
-	public static Vector3 ToRelAngVel(this OWRigidbody refBody, Vector3 angVel) =>
-		refBody.transform.InverseTransformDirection(angVel - refBody.GetAngularVelocity());
+	public static Vector3 ToRelAngVel(this Transform refTransform, Vector3 angVel) =>
+		refTransform.InverseTransformDirection(angVel - refTransform.GetAttachedOWRigidbody().GetAngularVelocity());
 
-	public static Vector3 FromRelAngVel(this OWRigidbody refBody, Vector3 relAngVel) =>
-		refBody.GetAngularVelocity() + refBody.transform.TransformDirection(relAngVel);
+	public static Vector3 FromRelAngVel(this Transform refTransform, Vector3 relAngVel) =>
+		refTransform.GetAttachedOWRigidbody().GetAngularVelocity() + refTransform.TransformDirection(relAngVel);
 }

@@ -130,16 +130,14 @@ namespace First_Test_Mod.src
                     var oldPos = occupant.GetPosition();
                     var relPos = transform.ToRelPos(oldPos);
                     var relRot = transform.ToRelRot(occupant.GetRotation());
-                    var relVel = transform.InverseTransformVector(occupant.GetVelocity() - transform.GetAttachedOWRigidbody().GetVelocity());
-                    var relAngVel = transform.GetAttachedOWRigidbody().ToRelAngVel(occupant.GetAngularVelocity());
+                    var relVel = transform.ToRelVel(occupant.GetVelocity(), oldPos);
+                    var relAngVel = transform.ToRelAngVel(occupant.GetAngularVelocity());
 
                     var newPos = linkedPortalTransform.FromRelPos(halfTurn * relPos);
                     occupant.SetPosition(newPos);
                     occupant.SetRotation(linkedPortalTransform.FromRelRot(halfTurn * relRot));
-
-                    occupant.SetVelocity(linkedPortalTransform.GetAttachedOWRigidbody().GetVelocity() + linkedPortalTransform.TransformVector(halfTurn * relVel));
-
-                    occupant.SetAngularVelocity(linkedPortalTransform.GetAttachedOWRigidbody().FromRelAngVel(halfTurn * relAngVel));
+                    occupant.SetVelocity(linkedPortalTransform.FromRelVel(halfTurn * relVel, newPos));
+                    occupant.SetAngularVelocity(linkedPortalTransform.FromRelAngVel(halfTurn * relAngVel));
 
                     if (!Physics.autoSyncTransforms) Physics.SyncTransforms(); // or else "Player grounded spherecast" complains
                     
