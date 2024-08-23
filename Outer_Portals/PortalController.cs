@@ -107,6 +107,7 @@ namespace First_Test_Mod.src
 
         public void UpdateTeleportOccupants()
         {
+
             // iterate backwards since we remove
             for (var i = teleportationOccupants.Count - 1; i >= 0; i--)
             {
@@ -115,12 +116,10 @@ namespace First_Test_Mod.src
                 Vector3 direction = transform.position - occupant.transform.position;
                 if (Vector3.Dot(transform.up, direction) < 0)
                 {
-                    NHLogger.Log("Should have teleported!");
                     Quaternion rotationDifference;
                     Transform linkedPortalTransform;
                     if (linkedToSelf || linkedPortal == null)
                     {
-                        rotationDifference = Quaternion.AngleAxis(180, transform.up);
                         linkedPortalTransform = transform;
                     }
                     else
@@ -128,40 +127,27 @@ namespace First_Test_Mod.src
                         rotationDifference = transform.rotation * Quaternion.Inverse(linkedPortal.transform.rotation) * Quaternion.AngleAxis(180, linkedPortal.transform.up);
                         linkedPortalTransform = linkedPortal.transform;
                     }
-
                     var oldPos = occupant.GetPosition();
                     var relPos = transform.ToRelPos(oldPos);
                     var relRot = transform.ToRelRot(occupant.GetRotation());
-                    var relVel = transform.GetAttachedOWRigidbody().ToRelVel(occupant.GetVelocity(), oldPos);
+                    var relVel = transform.InverseTransformVector(occupant.GetVelocity() - transform.GetAttachedOWRigidbody().GetVelocity());
                     var relAngVel = transform.GetAttachedOWRigidbody().ToRelAngVel(occupant.GetAngularVelocity());
 
                     var newPos = linkedPortalTransform.FromRelPos(halfTurn * relPos);
                     occupant.SetPosition(newPos);
                     occupant.SetRotation(linkedPortalTransform.FromRelRot(halfTurn * relRot));
-                    NHLogger.Log($"{relVel} -> {halfTurn * relVel} ({occupant.GetVelocity()} -> {linkedPortalTransform.GetAttachedOWRigidbody().FromRelVel(halfTurn * relVel, newPos)}");
-                    occupant.SetVelocity(linkedPortalTransform.GetAttachedOWRigidbody().FromRelVel(halfTurn * relVel, newPos));
+
+                    occupant.SetVelocity(linkedPortalTransform.GetAttachedOWRigidbody().GetVelocity() + linkedPortalTransform.TransformVector(halfTurn * relVel));
+
                     occupant.SetAngularVelocity(linkedPortalTransform.GetAttachedOWRigidbody().FromRelAngVel(halfTurn * relAngVel));
-                    
+
                     if (!Physics.autoSyncTransforms) Physics.SyncTransforms(); // or else "Player grounded spherecast" complains
-
-                    /*
-                    Vector3 positionDifference = transform.InverseTransformPoint(occupant.transform.position);
-                    positionDifference = new Vector3(-positionDifference.x,positionDifference.y, -positionDifference.z);
-
-                    var newRot = Quaternion.LookRotation(-linkedPortalTransform.forward, linkedPortalTransform.up) * transform.InverseTransformRotation(occupant.transform.rotation);
-                    //var newRot = occupant.transform.rotation * Quaternion.LookRotation(-linkedPortalTransform.forward, linkedPortalTransform.up);
-                    Vector3 relativeVelocity =  occupant.GetVelocity() - transform.GetAttachedOWRigidbody().GetPointVelocity(transform.position);
-
-                    occupant.transform.position = linkedPortalTransform.TransformPoint(positionDifference);
-                    occupant.transform.rotation = newRot;
-                    occupant.SetVelocity((newRot * relativeVelocity) + linkedPortalTransform.GetAttachedOWRigidbody().GetPointVelocity(linkedPortalTransform.position));
-                    //occupant.SetVelocity(rotationDifference * relativeVelocity);
-                    */
-
+                    
                     if (linkedToSelf)
                     {
                         teleportationOccupants.RemoveAt(i);
                     }
+                    
                 }
             }
         }
