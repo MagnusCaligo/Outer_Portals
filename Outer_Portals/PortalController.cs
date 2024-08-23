@@ -15,6 +15,7 @@ using System.Drawing.Drawing2D;
 
 namespace First_Test_Mod.src
 {
+    // see https://github.com/TerrificTrifid/ow-nh-quasar-project/blob/main/QuasarProject/PortalController.cs as well
     [HarmonyPatch]
     internal class PortalController : MonoBehaviour
     {
@@ -29,6 +30,7 @@ namespace First_Test_Mod.src
         private bool lastVisibility = false;
         private VisibilityObject visibilityObject;
         private bool doTransformations = true;
+        private List<OWRigidbody> teleportationOccupants;
 
         // Corners for calculating clipping
         private List<Vector3> corners;
@@ -38,6 +40,8 @@ namespace First_Test_Mod.src
         // private MeshRenderer meshRenderer;
 
         private readonly List<Sector> alreadyOccupiedSectors = new();
+        
+        private static readonly Quaternion halfTurn = Quaternion.Euler(0.0f, 180.0f, 0.0f);
 
         public void Start()
         {
@@ -67,6 +71,83 @@ namespace First_Test_Mod.src
             camera.farClipPlane = 5000;
 
             visibilityObject = renderPlane.GetComponent<VisibilityObject>();
+            teleportationOccupants = new List<OWRigidbody>();
+
+            var triggerVolume = gameObject.GetComponent<OWTriggerVolume>();
+            if (triggerVolume != null)
+            {
+                triggerVolume.OnEntry += onEntryTeleporationPlane;
+                triggerVolume.OnExit += onLeaveTeleportationPlane;
+            }
+
+        }
+
+        public void onEntryTeleporationPlane(GameObject obj)
+        {
+            NHLogger.Log("Entered trigger volume");
+            OWCollider component = obj.GetComponent<OWCollider>();
+            if (component.CompareTag("PlayerDetector") || component.CompareTag("ProbeDetector"))
+            {
+                var body = obj.GetComponentInParent<OWRigidbody>();
+                teleportationOccupants.Add(body);
+            }
+        }
+
+        public void onLeaveTeleportationPlane(GameObject obj)
+        {
+            NHLogger.Log("Leave Trigger Volume");
+            OWCollider component = obj.GetComponent<OWCollider>();
+            if (component.CompareTag("PlayerDetector") || component.CompareTag("ProbeDetector"))
+            {
+                var body = obj.GetComponentInParent<OWRigidbody>();
+                if (teleportationOccupants.Contains(body))
+                    teleportationOccupants.Remove(body);
+            }
+        }
+
+        public void UpdateTeleportOccupants()
+        {
+
+            // iterate backwards since we remove
+            for (var i = teleportationOccupants.Count - 1; i >= 0; i--)
+            {
+                var occupant = teleportationOccupants[i];
+                
+                Vector3 direction = transform.position - occupant.transform.position;
+                if (Vector3.Dot(transform.up, direction) < 0)
+                {
+                    Quaternion rotationDifference;
+                    Transform linkedPortalTransform;
+                    if (linkedToSelf || linkedPortal == null)
+                    {
+                        linkedPortalTransform = transform;
+                    }
+                    else
+                    {
+                        rotationDifference = transform.rotation * Quaternion.Inverse(linkedPortal.transform.rotation) * Quaternion.AngleAxis(180, linkedPortal.transform.up);
+                        linkedPortalTransform = linkedPortal.transform;
+                    }
+                    var oldPos = occupant.GetPosition();
+                    var relPos = transform.ToRelPos(oldPos);
+                    var relRot = transform.ToRelRot(occupant.GetRotation());
+                    var relVel = transform.ToRelVel(occupant.GetVelocity(), oldPos);
+                    var relAngVel = transform.ToRelAngVel(occupant.GetAngularVelocity());
+
+                    var newPos = linkedPortalTransform.FromRelPos(halfTurn * relPos);
+                    occupant.SetPosition(newPos);
+                    occupant.SetRotation(linkedPortalTransform.FromRelRot(halfTurn * relRot));
+                    occupant.SetVelocity(linkedPortalTransform.FromRelVel(halfTurn * relVel, newPos));
+                    occupant.SetAngularVelocity(linkedPortalTransform.FromRelAngVel(halfTurn * relAngVel));
+
+                    if (!Physics.autoSyncTransforms) Physics.SyncTransforms(); // or else "Player grounded spherecast" complains
+                    
+                    if (linkedToSelf)
+                    {
+                        teleportationOccupants.RemoveAt(i);
+                    }
+                    
+                }
+            }
         }
 
         // Made based off of this forum post: https://discussions.unity.com/t/how-do-i-render-only-a-part-of-the-cameras-view/23686/2
@@ -153,6 +234,11 @@ namespace First_Test_Mod.src
             SetScissorRect(camera, rect);
         }
 
+        public void FixedUpdate()
+        {
+            UpdateTeleportOccupants();
+        }
+
         // you would think this should be in FixedUpdate since it depends on player movement,
         // but doing that makes it lag one frame behind
         public void Update()
@@ -170,19 +256,24 @@ namespace First_Test_Mod.src
             */
 
             Transform output_portal_transform;
-            if (linkedToSelf)
+            if (linkedToSelf || linkedPortal == null)
             {
                 output_portal_transform = transform;
             }
             else
             {
-                if (linkedPortal == null)
-                    return;
                 output_portal_transform = linkedPortal.transform;
             }
 
             // apply transformation based on player camera
             {
+                var relPos = transform.ToRelPos(playerCamera.transform.position);
+                var relRot = transform.ToRelRot(playerCamera.transform.rotation);
+
+                camera.transform.position = output_portal_transform.FromRelPos(halfTurn * relPos);
+                camera.transform.rotation = output_portal_transform.FromRelRot(halfTurn * relRot);
+                
+                /*
                 var playerInLocal = transform.InverseTransformPoint(playerCamera.transform.position);
                 playerInLocal = new Vector3(-playerInLocal.x, playerInLocal.y, -playerInLocal.z); // Position on opposite side of portal
                 var newPos = output_portal_transform.TransformPoint(playerInLocal);
@@ -195,6 +286,7 @@ namespace First_Test_Mod.src
 
                 camera.transform.position = newPos;
                 camera.transform.rotation = newRot;
+                */
             }
 
             // Calculate clip distance to maximize camera through portal while minimizing rendering stuff between camera and portal
