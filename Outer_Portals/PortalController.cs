@@ -25,6 +25,7 @@ namespace First_Test_Mod.src
         public PortalController linkedPortal;
         public bool linkedToSelf = false;
         public String sectorName;
+        public GameObject teleportationPlane;
 
         private static readonly List<Camera> cameras = new List<Camera>();
         private bool lastVisibility = false;
@@ -112,9 +113,8 @@ namespace First_Test_Mod.src
             for (var i = teleportationOccupants.Count - 1; i >= 0; i--)
             {
                 var occupant = teleportationOccupants[i];
-                
-                Vector3 direction = transform.position - occupant.transform.position;
-                if (Vector3.Dot(transform.up, direction) < 0)
+                Vector3 direction = occupant.transform.GetAttachedOWRigidbody().GetVelocity() - transform.GetAttachedOWRigidbody().GetVelocity();
+                if (Vector3.Dot(teleportationPlane.transform.up, direction) < 0.01f)
                 {
                     Quaternion rotationDifference;
                     Transform linkedPortalTransform;
