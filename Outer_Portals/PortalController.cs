@@ -19,12 +19,14 @@ namespace First_Test_Mod.src
         public bool linkedToSelf = false;
         public String sectorName;
         public GameObject teleportationPlane;
+        public GameObject PortalSectorDetector;
 
         private static readonly List<Camera> cameras = new List<Camera>();
         private bool lastVisibility = false;
         private VisibilityObject visibilityObject;
         private bool doTransformations = true;
         private List<OWRigidbody> teleportationOccupants;
+        private SectorDetector sectorDetector;
 
         // Corners for calculating clipping
         private List<Vector3> corners;
@@ -55,6 +57,10 @@ namespace First_Test_Mod.src
 
             visibilityObject = renderPlane.GetComponent<VisibilityObject>();
             teleportationOccupants = new List<OWRigidbody>();
+
+            if (sectorDetector == null) { 
+                sectorDetector = PortalSectorDetector.GetComponent<SectorDetector>();
+            }
 
             var triggerVolume = gameObject.GetComponent<OWTriggerVolume>();
             if (triggerVolume != null)
@@ -302,7 +308,7 @@ namespace First_Test_Mod.src
                 // NHLogger.Log($"From portal: {name}, adding to sector {sector.name}");
                 if (sector.ContainsOccupant(DynamicOccupant.Player))
                     alreadyOccupiedSectors.Add(sector);
-                sector.AddOccupant(Locator.GetPlayerSectorDetector());
+                sector.AddOccupant(sectorDetector);
                 sector = sector.GetParentSector();
             }
         }
@@ -357,7 +363,7 @@ namespace First_Test_Mod.src
             while (sector != null)
             {
                 if (!alreadyOccupiedSectors.Contains(sector))
-                    sector.RemoveOccupant(Locator.GetPlayerSectorDetector());
+                    sector.RemoveOccupant(sectorDetector);
                 sector = sector.GetParentSector();
             }
         }
