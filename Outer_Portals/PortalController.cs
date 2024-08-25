@@ -332,13 +332,27 @@ namespace First_Test_Mod.src
             if (linkedPortalSectorName == null)
                 return;
             var sector = SectorManager.GetRegisteredSectors().Find(sector => sector.name == linkedPortalSectorName);
+            AstroObject astroObject = null;
 
-            // some of SectorStreaming is distance based, so have to do it ourselves
-            var streamingGroup = StreamingHandler.GetStreamingGroup(sector.GetComponentInParent<AstroObject>().GetAstroObjectName());
-            if (streamingGroup != null)
+
+            while (astroObject == null && sector != null)
             {
-                streamingGroup.RequestRequiredAssets();
+                // some of SectorStreaming is distance based, so have to do it ourselves
+                astroObject = sector.GetComponentInParent<AstroObject>();
+                if (astroObject == null)
+                {
+                    sector = sector.GetParentSector();
+                    continue;
+                }
+                var streamingGroup = StreamingHandler.GetStreamingGroup(astroObject.GetAstroObjectName());
+                if (streamingGroup != null)
+                {
+                    streamingGroup.RequestRequiredAssets();
+                    break;
+                }
             }
+
+            sector = SectorManager.GetRegisteredSectors().Find(sector => sector.name == linkedPortalSectorName);
 
             // the same strategy NomaiRemoteCameraPlatform uses
             alreadyOccupiedSectors.Clear();
@@ -377,12 +391,26 @@ namespace First_Test_Mod.src
             if (linkedPortalSectorName == null)
                 return;
             var sector = SectorManager.GetRegisteredSectors().Find(sector => sector.name == linkedPortalSectorName);
+            AstroObject astroObject = null;
 
-            var streamingGroup = StreamingHandler.GetStreamingGroup(sector.GetComponentInParent<AstroObject>().GetAstroObjectName());
-            if (streamingGroup != null)
+            while (astroObject == null && sector != null)
             {
-                streamingGroup.ReleaseRequiredAssets();
+                // some of SectorStreaming is distance based, so have to do it ourselves
+                astroObject = sector.GetComponentInParent<AstroObject>();
+                if (astroObject == null)
+                {
+                    sector = sector.GetParentSector();
+                    continue;
+                }
+                var streamingGroup = StreamingHandler.GetStreamingGroup(astroObject.GetAstroObjectName());
+                if (streamingGroup != null)
+                {
+                    streamingGroup.ReleaseRequiredAssets();
+                    break;
+                }
             }
+
+            sector = SectorManager.GetRegisteredSectors().Find(sector => sector.name == linkedPortalSectorName);
 
             while (sector != null)
             {
