@@ -1,18 +1,10 @@
-﻿using OWML.ModHelper;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using UnityEngine;
 using HarmonyLib;
-using UnityEngine.Windows.WebCam;
-using NewHorizons.Components;
 using NewHorizons.Utility.OWML;
-using HarmonyLib.Tools;
 using NewHorizons.Handlers;
-using NewHorizons.Utility;
-using System.Drawing.Drawing2D;
 
 namespace First_Test_Mod.src
 {
@@ -36,10 +28,7 @@ namespace First_Test_Mod.src
 
         // Corners for calculating clipping
         private List<Vector3> corners;
-        // private Rect viewportRect;
-        // private int debugCount = 0;
         private static Camera playerCamera;
-        // private MeshRenderer meshRenderer;
 
         private readonly List<Sector> alreadyOccupiedSectors = new();
         
@@ -55,14 +44,6 @@ namespace First_Test_Mod.src
             corners.Add(new Vector3(radiusOfPortal, 0, 0));
             corners.Add(new Vector3(radiusOfPortal, 2*radiusOfPortal, 0));
 
-            /*
-            meshRenderer = gameObject.GetAddComponent<MeshRenderer>();
-            if (meshRenderer == null)
-            {
-                NHLogger.LogError("MESH RENDER IS NULL");
-            }
-            */
-
             if (playerCamera == null)
                 playerCamera = Locator.GetPlayerCamera().mainCamera;
 
@@ -70,7 +51,7 @@ namespace First_Test_Mod.src
             // TODO: do camera post processing properly, use nh Layer class for mask 
             camera.cullingMask = 4194321;
             camera.backgroundColor = Color.black;
-            camera.farClipPlane = 5000;
+            camera.farClipPlane = 50000;
 
             visibilityObject = renderPlane.GetComponent<VisibilityObject>();
             teleportationOccupants = new List<OWRigidbody>();
@@ -146,7 +127,7 @@ namespace First_Test_Mod.src
                     {
                         teleportationOccupants.RemoveAt(i);
                     }
-                    
+
                 }
             }
         }
@@ -174,13 +155,6 @@ namespace First_Test_Mod.src
             
             List<Vector3> points_on_screen = new List<Vector3>();
             corners.ForEach(x => points_on_screen.Add(playerCamera.WorldToScreenPoint(transform.TransformPoint(x))));
-            
-            /*
-            Vector3 left_most_point = points_on_screen.OrderBy(x => x.x).First();
-            Vector3 right_most_point = points_on_screen.OrderBy(x => x.x).Last();
-            Vector3 top_most_point = points_on_screen.OrderBy(x => x.y).Last();
-            Vector3 bottom_most_point = points_on_screen.OrderBy(x => x.y).First();
-            */
 
             Vector3 initialPoint = points_on_screen.OrderBy(x => x.z).Last();
 
@@ -215,21 +189,11 @@ namespace First_Test_Mod.src
                     yMax = point.y;
             });
 
-            /*
-            float bottom_point_x = Mathf.Clamp(left_most_point.x / Screen.width, 0, 1);
-            float bottom_point_y = Mathf.Clamp(bottom_most_point.y / Screen.height, 0, 1);
-            float width_value = Mathf.Clamp((Mathf.Clamp(right_most_point.x, 0, Screen.width) - Mathf.Clamp(left_most_point.x, 0, Screen.width)) / Screen.width, 0, 1);
-            float height_value = Mathf.Clamp((Mathf.Clamp(top_most_point.y, 0, Screen.height) - Mathf.Clamp(bottom_most_point.y, 0, Screen.height)) / Screen.height, 0, 1);
-            */
-
             xMin = Mathf.Clamp(xMin / Screen.width, 0, 1);
             xMax = Mathf.Clamp(xMax / Screen.width, 0, 1);
             yMin = Mathf.Clamp(yMin / Screen.height, 0, 1);
             yMax = Mathf.Clamp(yMax / Screen.height, 0, 1);
 
-            // static float round(float x, float place) => Mathf.Ceil(x / place) * place;
-            
-            // Rect rect = new Rect(xMin, yMin, round(xMax - xMin, .5f), round(yMax - yMin, .5f));
             Rect rect = new Rect(xMin, yMin, xMax - xMin, yMax - yMin);
 
             SetScissorRect(camera, rect);
@@ -247,14 +211,6 @@ namespace First_Test_Mod.src
             UpdateVisibility();
             if (!doTransformations)
                 return;
-            /*
-            if (!meshRenderer.isVisible)
-            {
-                camera.enabled = false;
-                return;
-            }
-            camera.enabled = true;
-            */
 
             Transform output_portal_transform;
             if (linkedToSelf || linkedPortal == null)
@@ -273,21 +229,6 @@ namespace First_Test_Mod.src
 
                 camera.transform.position = output_portal_transform.FromRelPos(halfTurn * relPos);
                 camera.transform.rotation = output_portal_transform.FromRelRot(halfTurn * relRot);
-                
-                /*
-                var playerInLocal = transform.InverseTransformPoint(playerCamera.transform.position);
-                playerInLocal = new Vector3(-playerInLocal.x, playerInLocal.y, -playerInLocal.z); // Position on opposite side of portal
-                var newPos = output_portal_transform.TransformPoint(playerInLocal);
-                if (linkedToSelf)
-                    newPos += -0.1f * output_portal_transform.forward;
-
-                var outputPortalUp = output_portal_transform.rotation * Vector3.up;
-                // this LookRotation has the same affect as rotating 180 degree and then doing TransformRotation
-                var newRot = Quaternion.LookRotation(-output_portal_transform.forward, outputPortalUp) * transform.InverseTransformRotation(playerCamera.transform.rotation);
-
-                camera.transform.position = newPos;
-                camera.transform.rotation = newRot;
-                */
             }
 
             // Calculate clip distance to maximize camera through portal while minimizing rendering stuff between camera and portal
@@ -334,7 +275,7 @@ namespace First_Test_Mod.src
             var sector = SectorManager.GetRegisteredSectors().Find(sector => sector.name == linkedPortalSectorName);
             AstroObject astroObject = null;
 
-
+            // Find the astro object of the sector
             while (astroObject == null && sector != null)
             {
                 // some of SectorStreaming is distance based, so have to do it ourselves
@@ -393,6 +334,7 @@ namespace First_Test_Mod.src
             var sector = SectorManager.GetRegisteredSectors().Find(sector => sector.name == linkedPortalSectorName);
             AstroObject astroObject = null;
 
+            // Find the astro object of the sector
             while (astroObject == null && sector != null)
             {
                 // some of SectorStreaming is distance based, so have to do it ourselves
