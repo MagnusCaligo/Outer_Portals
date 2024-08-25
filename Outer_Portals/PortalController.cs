@@ -10,6 +10,7 @@ using UnityEngine.Windows.WebCam;
 using NewHorizons.Components;
 using NewHorizons.Utility.OWML;
 using HarmonyLib.Tools;
+using NewHorizons.Handlers;
 using NewHorizons.Utility;
 using System.Drawing.Drawing2D;
 
@@ -332,6 +333,13 @@ namespace First_Test_Mod.src
                 return;
             var sector = SectorManager.GetRegisteredSectors().Find(sector => sector.name == linkedPortalSectorName);
 
+            // some of SectorStreaming is distance based, so have to do it ourselves
+            var streamingGroup = StreamingHandler.GetStreamingGroup(sector.GetComponentInParent<AstroObject>().GetAstroObjectName());
+            if (streamingGroup != null)
+            {
+                streamingGroup.RequestRequiredAssets();
+            }
+
             // the same strategy NomaiRemoteCameraPlatform uses
             alreadyOccupiedSectors.Clear();
             while (sector != null)
@@ -369,6 +377,12 @@ namespace First_Test_Mod.src
             if (linkedPortalSectorName == null)
                 return;
             var sector = SectorManager.GetRegisteredSectors().Find(sector => sector.name == linkedPortalSectorName);
+
+            var streamingGroup = StreamingHandler.GetStreamingGroup(sector.GetComponentInParent<AstroObject>().GetAstroObjectName());
+            if (streamingGroup != null)
+            {
+                streamingGroup.ReleaseRequiredAssets();
+            }
 
             while (sector != null)
             {
