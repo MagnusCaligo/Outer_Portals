@@ -381,8 +381,6 @@ namespace First_Test_Mod.src
 
             // Check that we are facing the correct way and close enough
             Vector3 positionDifference = playerCamera.transform.position - transform.position;
-            Vector3 leftCameraFrustrum = Quaternion.AngleAxis(-playerCamera.fieldOfView / 2.0f, playerCamera.transform.up) * playerCamera.transform.forward;
-            Vector3 rightCameraFrustrum = Quaternion.AngleAxis(playerCamera.fieldOfView / 2.0f, playerCamera.transform.up) * playerCamera.transform.forward;
 
             bool playerInSector = true;
             if (!linkedToSelf)
@@ -390,6 +388,7 @@ namespace First_Test_Mod.src
                 var sector = SectorManager.GetRegisteredSectors().Find(sector => sector.name == sectorName);
                 if (sector != null)
                     playerInSector = sector.ContainsOccupant(DynamicOccupant.Player);
+                playerInSector = true;
             }
             if (!lastVisibility && visibilityObject.IsVisible()
                 && playerInSector
