@@ -13,6 +13,8 @@ namespace First_Test_Mod.src
     internal class PortalController : MonoBehaviour
     {
 
+        public static int maximumRenderDistance = 1000;  // This is how close you need to be to a portal before it will actually start rendering. Used for performance.
+
         public Camera camera;
         public GameObject renderPlane;
         public PortalController linkedPortal;
@@ -24,7 +26,7 @@ namespace First_Test_Mod.src
         private static readonly List<Camera> cameras = new List<Camera>();
         private bool lastVisibility = false;
         private VisibilityObject visibilityObject;
-        private bool doTransformations = true;
+        private bool doTransformations = false;
         private List<OWRigidbody> teleportationOccupants;
         private SectorDetector sectorDetector;
 
@@ -55,8 +57,14 @@ namespace First_Test_Mod.src
             camera.backgroundColor = Color.black;
             camera.farClipPlane = 50000;
 
+
+
             visibilityObject = renderPlane.GetComponent<VisibilityObject>();
             teleportationOccupants = new List<OWRigidbody>();
+
+            // TODO REMOVE
+            //visibilityObject.enabled = false;
+            camera.enabled = false;
 
             if (sectorDetector == null) { 
                 sectorDetector = PortalSectorDetector.GetComponent<SectorDetector>();
@@ -260,7 +268,7 @@ namespace First_Test_Mod.src
 
         public void OnVisible()
         {
-            camera.enabled = true;
+            //camera.enabled = true;
             doTransformations = true;
 
             {
@@ -370,18 +378,34 @@ namespace First_Test_Mod.src
 
         public void UpdateVisibility()
         {
-            if (visibilityObject != null)
+
+            // Check that we are facing the correct way and close enough
+            Vector3 positionDifference = playerCamera.transform.position - transform.position;
+            Vector3 leftCameraFrustrum = Quaternion.AngleAxis(-playerCamera.fieldOfView / 2.0f, playerCamera.transform.up) * playerCamera.transform.forward;
+            Vector3 rightCameraFrustrum = Quaternion.AngleAxis(playerCamera.fieldOfView / 2.0f, playerCamera.transform.up) * playerCamera.transform.forward;
+
+            bool playerInSector = true;
+            if (!linkedToSelf)
             {
-                if (visibilityObject.IsVisible() && !lastVisibility)
-                {
-                    NHLogger.Log($"{this} visible");
-                    OnVisible();
-                }else if(!visibilityObject.IsVisible() && lastVisibility)
-                {
-                    NHLogger.Log($"{this} invisible");
-                    OnInvisible();
-                }
-                lastVisibility = visibilityObject.IsVisible();
+                var sector = SectorManager.GetRegisteredSectors().Find(sector => sector.name == sectorName);
+                if (sector != null)
+                    playerInSector = sector.ContainsOccupant(DynamicOccupant.Player);
+            }
+            if (!lastVisibility && visibilityObject.IsVisible()
+                && playerInSector
+                && positionDifference.magnitude < maximumRenderDistance)
+            {
+                NHLogger.Log($"{this} visible");
+                OnVisible();
+                lastVisibility = true;
+            }
+            else if (lastVisibility && (!visibilityObject.IsVisible()
+                || !playerInSector
+                || positionDifference.magnitude >= maximumRenderDistance))
+            {
+                NHLogger.Log($"{this} invisible");
+                OnInvisible();
+                lastVisibility = false;
             }
         }
 

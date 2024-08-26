@@ -10,6 +10,7 @@ using UnityEngine.Rendering;
 using NewHorizons;
 using NewHorizons.Utility.OuterWilds;
 using NewHorizons.Utility.OWML;
+using System.Runtime.CompilerServices;
 
 namespace First_Test_Mod;
 [HarmonyPatch]
@@ -66,6 +67,14 @@ public class First_Test_Mod : ModBehaviour
                 else
                     ModHelper.Console.WriteLine("No Portal Links found!");
             });
+    }
+
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(PlayerResources), nameof(PlayerResources.UpdateFuel))]
+    public static bool fuelOverride(PlayerResources __instance)
+    {
+        __instance._currentFuel = PlayerResources._maxFuel;
+        return false;
     }
 
     [HarmonyPostfix]
