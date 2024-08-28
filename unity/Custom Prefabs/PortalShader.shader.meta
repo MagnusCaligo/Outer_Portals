@@ -2,8 +2,7 @@ fileFormatVersion: 2
 guid: acfd66de8d463d84c99ca017aa30872b
 ShaderImporter:
   externalObjects: {}
-  defaultTextures:
-  - _MainTex: {fileID: 8400000, guid: 746c8b9d2350a26479c6321215841f23, type: 2}
+  defaultTextures: []
   nonModifiableTextures: []
   userData: 
   assetBundleName: portal/portal_shaders
