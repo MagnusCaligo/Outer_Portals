@@ -3,7 +3,7 @@ CRC: 1108666132
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: dff63fe24f1cf36b8df9af39387153ca
+    Hash: 29f09c78d02c7fbea60fc49f483ff1b2
   TypeTreeHash:
     serializedVersion: 2
     Hash: 55d48f4ad9c3b13330b9eb5ee5686477
@@ -14,5 +14,4 @@ ClassTypes:
 SerializeReferenceClassIdentifiers: []
 Assets:
 - Assets/Custom Prefabs/PortalShader.shader
-Dependencies:
-- C:/Users/joe30/source/repos/First Test Mod/Outer_Portals/assets/portal/portal_props
+Dependencies: []

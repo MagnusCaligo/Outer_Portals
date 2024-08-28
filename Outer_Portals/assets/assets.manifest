@@ -1,5 +1,5 @@
 ManifestFileVersion: 0
-CRC: 3533987665
+CRC: 3900413393
 AssetBundleManifest:
   AssetBundleInfos:
     Info_0:
@@ -8,5 +8,4 @@ AssetBundleManifest:
         Dependency_0: portal/portal_shaders
     Info_1:
       Name: portal/portal_shaders
-      Dependencies:
-        Dependency_0: portal/portal_props
+      Dependencies: {}
