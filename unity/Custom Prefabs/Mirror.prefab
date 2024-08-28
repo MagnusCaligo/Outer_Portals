@@ -42,7 +42,7 @@ BoxCollider:
   m_GameObject: {fileID: 239552565875451319}
   m_Material: {fileID: 0}
   m_IsTrigger: 0
-  m_Enabled: 1
+  m_Enabled: 0
   serializedVersion: 2
   m_Size: {x: 0, y: 0, z: 0}
   m_Center: {x: 0, y: 0, z: 0}
@@ -275,8 +275,6 @@ GameObject:
   m_Component:
   - component: {fileID: 1949850055231204287}
   - component: {fileID: 3741376219062481038}
-  - component: {fileID: 7610750589896504550}
-  - component: {fileID: 7606923952024643464}
   m_Layer: 0
   m_Name: Mirror
   m_TagString: Untagged
@@ -322,39 +320,6 @@ MonoBehaviour:
   sectorName: 
   teleportationPlane: {fileID: 8636907235932976665}
   PortalSectorDetector: {fileID: 239552565875451319}
---- !u!114 &7610750589896504550
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3677365077774950170}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fbb2498122f7e23a2e87544333cb528f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _initialOccupants: []
-  _sharedEntryways: []
-  _ignoreDuplicateOccupantWarning: 0
---- !u!114 &7606923952024643464
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3677365077774950170}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a223d69493f03f4a8e6bda998c52d250, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _collisionMode: 0
-  _layer: 1
-  _layerMask: -1
-  _pointChecksOnly: 0
-  _center: {x: 0, y: 2.5, z: 0}
-  _size: {x: 5, y: 5, z: 0}
 --- !u!1 &4294308238416012495
 GameObject:
   m_ObjectHideFlags: 0
