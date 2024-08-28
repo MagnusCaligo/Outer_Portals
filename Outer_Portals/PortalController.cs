@@ -26,15 +26,13 @@ namespace First_Test_Mod.src
         private static readonly List<Camera> cameras = new List<Camera>();
         private bool lastVisibility = false;
         private VisibilityObject visibilityObject;
-        private bool doTransformations = false;
+        private bool doTransformations = true;
         private List<OWRigidbody> teleportationOccupants;
         private SectorDetector sectorDetector;
 
         // Corners for calculating clipping
         private List<Vector3> corners;
         private static Camera playerCamera;
-
-        private readonly List<Sector> alreadyOccupiedSectors = new();
         
         private static readonly Quaternion halfTurn = Quaternion.Euler(0.0f, 180.0f, 0.0f);
 
@@ -62,15 +60,11 @@ namespace First_Test_Mod.src
             visibilityObject = renderPlane.GetComponent<VisibilityObject>();
             teleportationOccupants = new List<OWRigidbody>();
 
-            // TODO REMOVE
-            //visibilityObject.enabled = false;
-            camera.enabled = false;
-
             if (sectorDetector == null) { 
                 sectorDetector = PortalSectorDetector.GetComponent<SectorDetector>();
             }
 
-            var triggerVolume = gameObject.GetComponent<OWTriggerVolume>();
+            var triggerVolume = teleportationPlane.GetComponent<OWTriggerVolume>();
             if (triggerVolume != null)
             {
                 triggerVolume.OnEntry += onEntryTeleporationPlane;
@@ -110,7 +104,7 @@ namespace First_Test_Mod.src
             {
                 var occupant = teleportationOccupants[i];
                 Vector3 direction = occupant.transform.GetAttachedOWRigidbody().GetVelocity() - transform.GetAttachedOWRigidbody().GetVelocity();
-                if (Vector3.Dot(teleportationPlane.transform.up, direction) < 0.01f)
+                if (Vector3.Dot(teleportationPlane.transform.up, direction) < 0f)
                 {
                     Quaternion rotationDifference;
                     Transform linkedPortalTransform;
@@ -236,6 +230,12 @@ namespace First_Test_Mod.src
                 output_portal_transform = linkedPortal.transform;
             }
 
+            // Adjust teleportation plane depending on direction player is facing
+            // If the player is facing backwards, we need to move the teleportation back a little bit to prevent the camera from clipping through the portal
+            float adjustment = (-Vector3.Dot(playerCamera.transform.forward, transform.forward) + 1f) / 2f;
+            teleportationPlane.transform.SetLocalPositionZ(adjustment);
+
+
             // apply transformation based on player camera
             {
                 var relPos = transform.ToRelPos(playerCamera.transform.position);
@@ -268,7 +268,7 @@ namespace First_Test_Mod.src
 
         public void OnVisible()
         {
-            //camera.enabled = true;
+            camera.enabled = true;
             doTransformations = true;
 
             {
@@ -310,12 +310,8 @@ namespace First_Test_Mod.src
             sector = SectorManager.GetRegisteredSectors().Find(sector => sector.name == linkedPortalSectorName);
 
             // the same strategy NomaiRemoteCameraPlatform uses
-            alreadyOccupiedSectors.Clear();
             while (sector != null)
             {
-                // NHLogger.Log($"From portal: {name}, adding to sector {sector.name}");
-                if (sector.ContainsOccupant(DynamicOccupant.Player))
-                    alreadyOccupiedSectors.Add(sector);
                 sector.AddOccupant(sectorDetector);
                 sector = sector.GetParentSector();
             }
@@ -370,8 +366,7 @@ namespace First_Test_Mod.src
 
             while (sector != null)
             {
-                if (!alreadyOccupiedSectors.Contains(sector))
-                    sector.RemoveOccupant(sectorDetector);
+                sector.RemoveOccupant(sectorDetector);
                 sector = sector.GetParentSector();
             }
         }
@@ -382,14 +377,14 @@ namespace First_Test_Mod.src
             // Check that we are facing the correct way and close enough
             Vector3 positionDifference = playerCamera.transform.position - transform.position;
 
-            bool playerInSector = true;
-            if (!linkedToSelf)
-            {
-                var sector = SectorManager.GetRegisteredSectors().Find(sector => sector.name == sectorName);
-                if (sector != null)
-                    playerInSector = sector.ContainsOccupant(DynamicOccupant.Player);
-                playerInSector = true;
-            }
+            // Check if the player is in the same sector as the portal
+            bool playerInSector = false;
+            var sector = SectorManager.GetRegisteredSectors().Find(sector => sector.name == sectorName);
+            if (sector != null)
+                playerInSector = sector.GetOccupants().Find(occupant => occupant == Locator.GetPlayerSectorDetector());
+            else
+                playerInSector = true;  // If the portal doesn't exist in a sector, just used the maximumRenderDistance
+
             if (!lastVisibility && visibilityObject.IsVisible()
                 && playerInSector
                 && positionDifference.magnitude < maximumRenderDistance)

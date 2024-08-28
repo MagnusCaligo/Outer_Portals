@@ -7,41 +7,44 @@
                 "assetBundle": "assets/portal/portal_props",
                 "path": "Assets/Custom Prefabs/Mirror.prefab",
                 "parentPath": "TimberHearth_Body/Sector_TH/Sector_Village/Sector_StartingCamp",
-                "position": {"x": 15.31995, "y": -49, "z": 184.0632},
-                "rotation": {"x": 44.60432, "y": 259.9902, "z": 249.306},
+                "position": {"x": 14.52596, "y": -49.14703, "z": 183.8636},
+                "rotation": {"x": 51.9872, "y": 253.8924, "z": 244.8227},
+                "normal": {"x": 0.07093513, "y": -0.2619901, "z": 0.9624603},
                 "stretch": {"x": 1, "y": 1, "z": 1}
             },
             {
                 "rename": "th_to_gd",
                 "assetBundle": "assets/portal/portal_props",
                 "path": "Assets/Custom Prefabs/Mirror.prefab",
-                "position": {"x": 57.05997, "y": -107.886, "z": 218.18},
-                "rotation": {"x": 14.35882, "y": 112.2171, "z": 116.0575},
-                "normal": {"x": 0.2388334, "y": -0.4255513, "z": 0.8728486}
+                "position": {"x": -13.88002, "y": 73.23696, "z": 215.9117},
+                "rotation": {"x": 300.2793, "y": 122.4588, "z": 50.13843},
+                "normal": {"x": -0.05506486, "y": 0.3231695, "z": 0.9447376},
+
             },
             {
                 "rename": "th_to_et",
                 "assetBundle": "assets/portal/portal_props",
                 "path": "Assets/Custom Prefabs/Mirror.prefab",
-                "position": {"x": 54.53786, "y": -115.6752, "z": 214.7195},
-                "rotation": {"x": 36.03114, "y": 126.9737, "z": 124.9609},
-                "normal": {"x": 0.2236286, "y": -0.4633978, "z": 0.857469}
+                "position": {"x": -24.5127, "y": 59.96667, "z": 219.1242},
+                "rotation": {"x": 41.26305, "y": 277.9634, "z": 291.0456},
+                "normal": {"x": -0.1052559, "y": 0.2699402, "z": 0.957107},
             },
             {
                 "rename": "th_to_bh",
                 "assetBundle": "assets/portal/portal_props",
                 "path": "Assets/Custom Prefabs/Mirror.prefab",
-                "position": {"x": 49.65032, "y": -120.483, "z": 213.2161},
-                "rotation": {"x": 50.68973, "y": 144.0799, "z": 138.3173},
-                "normal": {"x": 0.1995451, "y": -0.4731374, "z": 0.8580926}
+
+                "position": {"x": -12.07053, "y": 61.27309, "z": 219.813},
+                "rotation": {"x": 44.75364, "y": 70.46476, "z": 66.35551},
+                "normal": {"x": -0.04019898, "y": 0.2848094, "z": 0.9577408},
             },
             {
                 "rename": "th_to_ar",
                 "assetBundle": "assets/portal/portal_props",
                 "path": "Assets/Custom Prefabs/Mirror.prefab",
-                "position": {"x": 43.32338, "y": -121.8071, "z": 213.9364},
-                "rotation": {"x": 61.15602, "y": 191.2587, "z": 180.4118},
-                "normal": {"x": 0.1639639, "y": -0.4824137, "z": 0.860461}
+                "position": {"x": -28.12948, "y": 67.61905, "z": 216.4432},
+                "rotation": {"x": 354.4831, "y": 261.6691, "z": 287.423},
+                "normal": {"x": -0.109759, "y": 0.2980365, "z": 0.9482232},
             }
 
         ]
