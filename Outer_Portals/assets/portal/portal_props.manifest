@@ -1,12 +1,12 @@
 ManifestFileVersion: 0
-CRC: 196607025
+CRC: 262442731
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 8ff26700a2fb2aeea18879d866ad90e1
+    Hash: d27ffd36b802683646c525d229425999
   TypeTreeHash:
     serializedVersion: 2
-    Hash: 4159c67fc644b3a7126126850b5fd1a9
+    Hash: 4e926d4adb1bc0a1087a8b4e8ad21ac6
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -29,8 +29,6 @@ ClassTypes:
   Script: {instanceID: 0}
 - Class: 65
   Script: {instanceID: 0}
-- Class: 84
-  Script: {instanceID: 0}
 - Class: 114
   Script: {fileID: 11500000, guid: fbb2498122f7e23a2e87544333cb528f, type: 3}
 - Class: 114
@@ -52,5 +50,4 @@ ClassTypes:
 SerializeReferenceClassIdentifiers: []
 Assets:
 - Assets/Custom Prefabs/Mirror.prefab
-Dependencies:
-- D:/Code Stuff/REMOTE/Outer_Portals/Outer_Portals/assets/portal/portal_shaders
+Dependencies: []

@@ -272,12 +272,9 @@ namespace First_Test_Mod.src
             doTransformations = true;
 
             {
-                var cameraMaterial = new Material(First_Test_Mod.portalShader);
-
-                camera.targetTexture = new RenderTexture(Screen.width, Screen.height, 24);
-                cameraMaterial.mainTexture = camera.targetTexture;
-
-                renderPlane.GetComponent<MeshRenderer>().sharedMaterial = cameraMaterial;
+                var renderTexture = new RenderTexture(Screen.width, Screen.height, 24);
+                renderTexture.Create();
+                renderPlane.GetComponent<MeshRenderer>().sharedMaterial.mainTexture = camera.targetTexture = renderTexture;
             }
 
             if (linkedPortal == null)
@@ -323,16 +320,10 @@ namespace First_Test_Mod.src
             doTransformations = false;
 
             {
-                var cameraMaterial = renderPlane.GetComponent<MeshRenderer>().sharedMaterial;
                 var renderTexture = camera.targetTexture;
-
-                camera.targetTexture = null;
-                cameraMaterial.mainTexture = null;
-                renderPlane.GetComponent<MeshRenderer>().sharedMaterial = null;
-
+                renderPlane.GetComponent<MeshRenderer>().sharedMaterial.mainTexture = camera.targetTexture = null;
                 renderTexture.Release();
                 DestroyImmediate(renderTexture);
-                DestroyImmediate(cameraMaterial);
             }
 
             if (linkedPortal == null)
