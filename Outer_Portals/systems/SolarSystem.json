@@ -16,9 +16,10 @@
             "sectors": {
                 "portal1": "Sector_StartingCamp",
                 "observatory_portal": "Sector_Observatory",
-                "th_to_ar": "Sector_StartingCamp",
-                "th_to_bh": "Sector_StartingCamp",
-                "th_to_et": "Sector_StartingCamp",
+                "th_to_ar": "Sector_Village",
+                "th_to_bh": "Sector_Village",
+                "th_to_et": "Sector_Village",
+                "th_to_gd": "Sector_Village",
                 "bh_to_th": "Sector_Crossroads",
                 "et_to_th": "Sector_Lakebed",
                 "ar_to_th": "Sector_THM"
