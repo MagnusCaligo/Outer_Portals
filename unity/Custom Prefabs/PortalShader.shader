@@ -2,7 +2,7 @@
 {
     Properties
     {
-        _MainTex ("Texture", 2D) = "white" {}
+        _MainTex ("Texture", 2D) = "black" {}
         _ViewportRect ("Viewport Rect", Vector) = (0, 0, 1, 1)
     }
     SubShader

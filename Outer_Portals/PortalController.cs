@@ -274,7 +274,7 @@ namespace First_Test_Mod.src
             {
                 var renderTexture = new RenderTexture(Screen.width, Screen.height, 24);
                 renderTexture.Create();
-                renderPlane.GetComponent<MeshRenderer>().sharedMaterial.mainTexture = camera.targetTexture = renderTexture;
+                renderPlane.GetComponent<MeshRenderer>().material.mainTexture = camera.targetTexture = renderTexture;
             }
 
             if (linkedPortal == null)
@@ -321,7 +321,7 @@ namespace First_Test_Mod.src
 
             {
                 var renderTexture = camera.targetTexture;
-                renderPlane.GetComponent<MeshRenderer>().sharedMaterial.mainTexture = camera.targetTexture = null;
+                renderPlane.GetComponent<MeshRenderer>().material.mainTexture = camera.targetTexture = null;
                 renderTexture.Release();
                 DestroyImmediate(renderTexture);
             }
@@ -397,7 +397,12 @@ namespace First_Test_Mod.src
         public void OnDestroy()
         {
             cameras.Remove(camera);
-            OnInvisible(); // to deallocate
+            {
+                var renderTexture = camera.targetTexture;
+                renderPlane.GetComponent<MeshRenderer>().material.mainTexture = camera.targetTexture = null;
+                renderTexture.Release();
+                DestroyImmediate(renderTexture);
+            }
         }
 
         public static void linkPortals(PortalLinks links)
