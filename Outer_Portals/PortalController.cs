@@ -51,9 +51,10 @@ namespace First_Test_Mod.src
 
             cameras.Add(camera);
             // TODO: do camera post processing properly, use nh Layer class for mask 
-            camera.cullingMask = 4194321;
-            camera.backgroundColor = Color.black;
-            camera.farClipPlane = 50000;
+            camera.cullingMask = playerCamera.cullingMask;
+            camera.backgroundColor = playerCamera.backgroundColor;
+            camera.farClipPlane = playerCamera.farClipPlane;
+            camera.gameObject.AddComponent<PlanetaryFogImageEffect>().fogShader = Shader.Find("Hidden/PlanetaryFogImageEffect");
 
 
 
