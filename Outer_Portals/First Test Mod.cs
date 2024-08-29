@@ -90,6 +90,16 @@ public class First_Test_Mod : ModBehaviour
         First_Test_Mod.Instance.ModHelper.Console.WriteLine("Calling Helper function");
         yield return new WaitForSeconds(3);
         movement_unlocked();
+        
+        // this may be jank. whatever
+        foreach (var faceActiveCamera in Resources.FindObjectsOfTypeAll<FaceActiveCamera>())
+        {
+            var betterFaceActiveCamera = faceActiveCamera.gameObject.AddComponent<BetterFaceActiveCamera>();
+            betterFaceActiveCamera._localFacingVector = faceActiveCamera._localFacingVector;
+            betterFaceActiveCamera._localRotationAxis = faceActiveCamera._localRotationAxis;
+            betterFaceActiveCamera._useLookAt = faceActiveCamera._useLookAt;
+            Destroy(faceActiveCamera);
+        }
     }
 
     public static void movement_unlocked()
