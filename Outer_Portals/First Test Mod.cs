@@ -19,8 +19,6 @@ public class First_Test_Mod : ModBehaviour
     public static First_Test_Mod Instance;
     public INewHorizons NewHorizons;
 
-    public static Shader portalShader;
-
     public void Awake()
     {
         Instance = this;
@@ -40,16 +38,6 @@ public class First_Test_Mod : ModBehaviour
         NewHorizons.LoadConfigs(this);
 
         new Harmony("Mags.First Test Mod").PatchAll(Assembly.GetExecutingAssembly());
-
-        {
-            var shaderBundle = ModHelper.Assets.LoadBundle("assets/portal/portal_shaders");
-            portalShader = shaderBundle.LoadAsset<Shader>("Assets/Custom Prefabs/PortalShader.shader");
-            if (portalShader == null)
-            {
-                Debug.LogError("Shader not found! Setting to empty one.");
-                portalShader = Shader.Find("Unlit/Color");
-            }
-        }
 
         // Example of accessing game code.
         OnCompleteSceneLoad(OWScene.TitleScreen, OWScene.TitleScreen); // We start on title screen
@@ -102,6 +90,16 @@ public class First_Test_Mod : ModBehaviour
         First_Test_Mod.Instance.ModHelper.Console.WriteLine("Calling Helper function");
         yield return new WaitForSeconds(3);
         movement_unlocked();
+        
+        // this may be jank. whatever
+        foreach (var faceActiveCamera in Resources.FindObjectsOfTypeAll<FaceActiveCamera>())
+        {
+            var betterFaceActiveCamera = faceActiveCamera.gameObject.AddComponent<BetterFaceActiveCamera>();
+            betterFaceActiveCamera._localFacingVector = faceActiveCamera._localFacingVector;
+            betterFaceActiveCamera._localRotationAxis = faceActiveCamera._localRotationAxis;
+            betterFaceActiveCamera._useLookAt = faceActiveCamera._useLookAt;
+            Destroy(faceActiveCamera);
+        }
     }
 
     public static void movement_unlocked()

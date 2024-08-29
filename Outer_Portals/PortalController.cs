@@ -51,9 +51,10 @@ namespace First_Test_Mod.src
 
             cameras.Add(camera);
             // TODO: do camera post processing properly, use nh Layer class for mask 
-            camera.cullingMask = 4194321;
-            camera.backgroundColor = Color.black;
-            camera.farClipPlane = 50000;
+            camera.cullingMask = playerCamera.cullingMask;
+            camera.backgroundColor = playerCamera.backgroundColor;
+            camera.farClipPlane = playerCamera.farClipPlane;
+            camera.gameObject.AddComponent<PlanetaryFogImageEffect>().fogShader = Shader.Find("Hidden/PlanetaryFogImageEffect");
 
 
 
@@ -272,12 +273,9 @@ namespace First_Test_Mod.src
             doTransformations = true;
 
             {
-                var cameraMaterial = new Material(First_Test_Mod.portalShader);
-
-                camera.targetTexture = new RenderTexture(Screen.width, Screen.height, 24);
-                cameraMaterial.mainTexture = camera.targetTexture;
-
-                renderPlane.GetComponent<MeshRenderer>().sharedMaterial = cameraMaterial;
+                var renderTexture = new RenderTexture(Screen.width, Screen.height, 24);
+                renderTexture.Create();
+                renderPlane.GetComponent<MeshRenderer>().material.mainTexture = camera.targetTexture = renderTexture;
             }
 
             if (linkedPortal == null)
@@ -323,16 +321,10 @@ namespace First_Test_Mod.src
             doTransformations = false;
 
             {
-                var cameraMaterial = renderPlane.GetComponent<MeshRenderer>().sharedMaterial;
                 var renderTexture = camera.targetTexture;
-
-                camera.targetTexture = null;
-                cameraMaterial.mainTexture = null;
-                renderPlane.GetComponent<MeshRenderer>().sharedMaterial = null;
-
+                renderPlane.GetComponent<MeshRenderer>().material.mainTexture = camera.targetTexture = null;
                 renderTexture.Release();
                 DestroyImmediate(renderTexture);
-                DestroyImmediate(cameraMaterial);
             }
 
             if (linkedPortal == null)
@@ -406,7 +398,12 @@ namespace First_Test_Mod.src
         public void OnDestroy()
         {
             cameras.Remove(camera);
-            OnInvisible(); // to deallocate
+            {
+                var renderTexture = camera.targetTexture;
+                renderPlane.GetComponent<MeshRenderer>().material.mainTexture = camera.targetTexture = null;
+                renderTexture.Release();
+                DestroyImmediate(renderTexture);
+            }
         }
 
         public static void linkPortals(PortalLinks links)
