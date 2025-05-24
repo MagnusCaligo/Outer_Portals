@@ -1,4 +1,4 @@
-﻿using First_Test_Mod.src;
+﻿using OuterPortals.src;
 using HarmonyLib;
 using OWML.Common;
 using OWML.ModHelper;
@@ -12,11 +12,11 @@ using NewHorizons.Utility.OuterWilds;
 using NewHorizons.Utility.OWML;
 using System.Runtime.CompilerServices;
 
-namespace First_Test_Mod;
+namespace OuterPortals;
 [HarmonyPatch]
-public class First_Test_Mod : ModBehaviour
+public class OuterPortals : ModBehaviour
 {
-    public static First_Test_Mod Instance;
+    public static OuterPortals Instance;
     public INewHorizons NewHorizons;
 
     public static Shader portalShader;
@@ -33,13 +33,13 @@ public class First_Test_Mod : ModBehaviour
     public void Start()
     {
         // Starting here, you'll have access to OWML's mod helper.
-        ModHelper.Console.WriteLine($"My mod {nameof(First_Test_Mod)} is loaded!", MessageType.Success);
+        ModHelper.Console.WriteLine($"My mod {nameof(OuterPortals)} is loaded!", MessageType.Success);
 
         // Get the New Horizons API and load configs
         NewHorizons = ModHelper.Interaction.TryGetModApi<INewHorizons>("xen.NewHorizons");
         NewHorizons.LoadConfigs(this);
 
-        new Harmony("Mags.First Test Mod").PatchAll(Assembly.GetExecutingAssembly());
+        new Harmony("Mags.OuterPortals").PatchAll(Assembly.GetExecutingAssembly());
 
         {
             var shaderBundle = ModHelper.Assets.LoadBundle("assets/portal/portal_shaders");
@@ -99,14 +99,14 @@ public class First_Test_Mod : ModBehaviour
 
     public IEnumerator helper_function()
     {
-        First_Test_Mod.Instance.ModHelper.Console.WriteLine("Calling Helper function");
+        OuterPortals.Instance.ModHelper.Console.WriteLine("Calling Helper function");
         yield return new WaitForSeconds(3);
         movement_unlocked();
     }
 
     public static void movement_unlocked()
     {
-        First_Test_Mod.Instance.ModHelper.Console.WriteLine("Should be putting on suit");
+        OuterPortals.Instance.ModHelper.Console.WriteLine("Should be putting on suit");
         Locator.GetPlayerSuit().SuitUp(false, false, true);   
     }
 }

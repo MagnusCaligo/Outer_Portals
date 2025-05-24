@@ -1,5 +1,6 @@
 ﻿<Project>
   <PropertyGroup>
-    <OutputPath>$(AppData)/OuterWildsModManager/OWML/Mods/Mags.First Test Mod</OutputPath>
+    <OutputPath>$(AppData)/OuterWildsModManager/OWML/Mods/Mags.OuterPortals</OutputPath>
+	<UnityDllsDir>F:\outer-wilds-unity-assets\Assets\Dlls</UnityDllsDir>
   </PropertyGroup>
 </Project>
