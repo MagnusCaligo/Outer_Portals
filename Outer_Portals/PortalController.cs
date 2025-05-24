@@ -81,15 +81,20 @@ namespace OuterPortals.src
         }
         private void RigidBody_OnUnsuspendOWRigidbody(OWRigidbody suspendedBody)
         {
-            NHLogger.Log("Should have suspended");
+            // Function for keeping the portals permenantly suspended.
+            // However, we have to prevent the colliders from disabling, so we re-enable them after re-suspending the OWRigidBody.
             suspendedBody.Suspend();
-
 
             var _childColliders = suspendedBody.GetComponentsInChildren<Collider>();
             for (int i = 0; i < _childColliders.Length; i++)
             {
                 _childColliders[i].gameObject.GetAddComponent<OWCollider>().OnUnsuspendOWRigidbody(suspendedBody);
             }
+        }
+
+        public bool isPhysicsReady()
+        {
+            return physicsReady;
         }
 
         public void onEntryTeleporationPlane(GameObject obj)
@@ -128,7 +133,12 @@ namespace OuterPortals.src
                 }
 
                 var occupant = teleportationOccupants[i];
-                Vector3 direction = occupant.transform.GetAttachedOWRigidbody().GetVelocity() - transform.GetAttachedOWRigidbody().GetVelocity();
+                var direction = Vector3.zero;
+                // Need to get the velocity from the parent if we are using physics becuase the OWRigid body is suspended and won't update values
+                if (isPhysicsReady())
+                    direction = occupant.transform.GetAttachedOWRigidbody().GetVelocity() - transform.GetAttachedOWRigidbody().GetOrigParentBody().GetPointVelocity(transform.position);
+                else
+                    direction = occupant.transform.GetAttachedOWRigidbody().GetVelocity() - transform.GetAttachedOWRigidbody().GetVelocity();
                 if (Vector3.Dot(teleportationPlane.transform.up, direction) < 0f)
                 {
                     Quaternion rotationDifference;
@@ -145,15 +155,39 @@ namespace OuterPortals.src
                     var oldPos = occupant.GetPosition();
                     var relPos = transform.ToRelPos(oldPos);
                     var relRot = transform.ToRelRot(occupant.GetRotation());
-                    NHLogger.Log($"Rotation Difference: {relRot}");
-                    var relVel = transform.ToRelVel(occupant.GetVelocity(), oldPos);
+
+                    var relVel = Vector3.zero;
+                    // If we have physics then the body is suspended and we can't get accurate values from the rigid body. Instead, use the parent's rigid body at the locaiton of the portal.
+                    if (isPhysicsReady())
+                    {
+                        var parentBody = gameObject.GetComponentInParent<OWRigidbody>().GetOrigParentBody();
+                        relVel = transform.ToRelVelParentBased(occupant.GetVelocity(), oldPos);
+                        NHLogger.Log($"Rel Vel: {relVel}\n" +
+                            $"Portal Velocity: {parentBody.GetPointVelocity(transform.position)}\n" +
+                            $"Occupant Velocity: {occupant.GetVelocity()}");
+                    }
+                    else
+                    {
+                        relVel = transform.ToRelVel(occupant.GetVelocity(), oldPos);
+                    }
+
                     var relAngVel = transform.ToRelAngVel(occupant.GetAngularVelocity());
 
                     var newPos = linkedPortalTransform.FromRelPos(halfTurn * relPos);
                     occupant.SetPosition(newPos);
                     occupant.SetRotation(linkedPortalTransform.FromRelRot(halfTurn * relRot));
-                    occupant.SetVelocity(linkedPortalTransform.FromRelVel(halfTurn * relVel, newPos));
-                    occupant.SetAngularVelocity(linkedPortalTransform.FromRelAngVel(halfTurn * relAngVel));
+
+                    // If the linked portal has physics, it will be suspended, so the velocity values are not up to date. Instead, get the velocity from the parent at the location of the portal.
+                    if (linkedPortal.isPhysicsReady())
+                    {
+                        occupant.SetVelocity(linkedPortalTransform.FromRelVelParentBased(halfTurn * relVel, newPos));
+                        occupant.SetAngularVelocity(linkedPortalTransform.FromRelAngVelParentBased(halfTurn * relAngVel));
+                    }
+                    else
+                    {
+                        occupant.SetVelocity(linkedPortalTransform.FromRelVel(halfTurn * relVel, newPos));
+                        occupant.SetAngularVelocity(linkedPortalTransform.FromRelAngVel(halfTurn * relAngVel));
+                    }
 
                     if (!Physics.autoSyncTransforms) Physics.SyncTransforms(); // or else "Player grounded spherecast" complains
                     
@@ -240,6 +274,8 @@ namespace OuterPortals.src
 
         public void CheckPhysicsReady()
         {
+            // The physics created by NewHorizons comes _after_ this object is created.
+            // So this function checks to see if the the NH stuff is done, then makes modifications to the physics.
             if (physicsReady)
             {
                 return;
@@ -251,7 +287,6 @@ namespace OuterPortals.src
                 rigidBody = gameObject.GetComponentInParent<OWRigidbody>();
                 rigidBody.Suspend();
                 rigidBody.OnUnsuspendOWRigidbody += RigidBody_OnUnsuspendOWRigidbody;
-                gameObject.GetComponentInParent<Rigidbody>().mass = 9999;
             }
         }
 

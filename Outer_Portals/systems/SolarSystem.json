@@ -3,7 +3,7 @@
     "extras": {
         "PortalLinks": {
             "links": {
-                "portal1" : "th_to_gd",
+                "portal1" : "et_to_th",
                 "portal2" : "portal1",
                 "th_to_ar" : "ar_to_th",
                 "th_to_bh" : "portal1",
@@ -11,7 +11,7 @@
                 "th_to_gd" : "portal1",
                 "observatory_portal": "portal1",
                 "bh_to_th" : "th_to_bh",
-                "et_to_th" : "th_to_et",
+                "et_to_th" : "portal1",
                 "vertical_tunnel1" : "vertical_tunnel2",
                 "vertical_tunnel2" : "vertical_tunnel1"
             },

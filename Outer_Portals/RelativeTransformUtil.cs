@@ -30,4 +30,18 @@ public static class RelativeTransformUtil
 
 	public static Vector3 FromRelAngVel(this Transform refTransform, Vector3 relAngVel) =>
 		refTransform.GetAttachedOWRigidbody().GetAngularVelocity() + refTransform.TransformDirection(relAngVel);
+
+
+	// Process the relative velocities based on the parent body. This is needed because the main body is suspended and the values are not updated.
+	public static Vector3 ToRelVelParentBased(this Transform refTransform, Vector3 vel, Vector3 pos) =>
+		refTransform.InverseTransformDirection(vel - refTransform.GetAttachedOWRigidbody().GetOrigParentBody().GetPointVelocity(pos));
+
+	public static Vector3 FromRelVelParentBased(this Transform refTransform, Vector3 relVel, Vector3 pos) =>
+		refTransform.GetAttachedOWRigidbody().GetOrigParentBody().GetPointVelocity(pos) + refTransform.TransformDirection(relVel);
+
+	public static Vector3 ToRelAngVelParentBased(this Transform refTransform, Vector3 angVel) =>
+		refTransform.InverseTransformDirection(angVel - refTransform.GetAttachedOWRigidbody().GetOrigParentBody().GetAngularVelocity());
+
+	public static Vector3 FromRelAngVelParentBased(this Transform refTransform, Vector3 relAngVel) =>
+		refTransform.GetAttachedOWRigidbody().GetOrigParentBody().GetAngularVelocity() + refTransform.TransformDirection(relAngVel);
 }
