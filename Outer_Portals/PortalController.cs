@@ -5,12 +5,13 @@ using UnityEngine;
 using HarmonyLib;
 using NewHorizons.Utility.OWML;
 using NewHorizons.Handlers;
+using NewHorizons.Components;
 
 namespace OuterPortals.src
 {
     // see https://github.com/TerrificTrifid/ow-nh-quasar-project/blob/main/QuasarProject/PortalController.cs as well
     [HarmonyPatch]
-    internal class PortalController : MonoBehaviour
+    public class PortalController : MonoBehaviour
     {
 
         public static int maximumRenderDistance = 100;  // This is how close you need to be to a portal before it will actually start rendering. Used for performance.
@@ -22,6 +23,7 @@ namespace OuterPortals.src
         public String sectorName;
         public GameObject teleportationPlane;
         public GameObject PortalSectorDetector;
+        public GameObject DebugForceDisplayer;
 
         private static readonly List<Camera> cameras = new List<Camera>();
         private bool lastVisibility = false;
@@ -32,6 +34,7 @@ namespace OuterPortals.src
 
         // Physics Stuff
         private bool physicsReady = false;  // We can't set the rigid body until NH has added it afterwards
+        private AlignmentForceDetector alignmentForceDetector;
         private OWRigidbody rigidBody;
 
         // Corners for calculating clipping
@@ -43,6 +46,12 @@ namespace OuterPortals.src
 
         public void Start()
         {
+
+            DebugForceDisplayer.SetActive(false);
+            var sector = SectorManager.GetRegisteredSectors().Find(sector => sector.name == transform.parent.name);
+            var physics = gameObject.AddComponent<AddPortalPhysics>();
+            physics.Sector = sector;
+
             // Setup Corners
             float radiusOfPortal = transform.localScale.x * (renderPlane.transform.localScale.x / 2f);
             corners = new List<Vector3>();
@@ -97,9 +106,17 @@ namespace OuterPortals.src
             return physicsReady;
         }
 
+        public Vector3 getAlignmentForce()
+        {
+            if (isPhysicsReady())
+            {
+                return alignmentForceDetector.GetAlignmentAcceleration();
+            }
+            return Vector3.zero;
+        }
+
         public void onEntryTeleporationPlane(GameObject obj)
         {
-            NHLogger.Log("Entered trigger volume");
             OWCollider component = obj.GetComponent<OWCollider>();
             if (component.CompareTag("PlayerDetector") || component.CompareTag("ProbeDetector"))
             {
@@ -110,7 +127,6 @@ namespace OuterPortals.src
 
         public void onLeaveTeleportationPlane(GameObject obj)
         {
-            NHLogger.Log("Leave Trigger Volume");
             OWCollider component = obj.GetComponent<OWCollider>();
             if (component.CompareTag("PlayerDetector") || component.CompareTag("ProbeDetector"))
             {
@@ -128,8 +144,6 @@ namespace OuterPortals.src
             {
 
                 if (teleportationOccupants[i].CompareTag("Player")){
-                    NHLogger.Log("About to teleport player");
-                    NHLogger.Log($"Player Transform: {teleportationOccupants[i].transform.position}");
                 }
 
                 var occupant = teleportationOccupants[i];
@@ -139,6 +153,7 @@ namespace OuterPortals.src
                     direction = occupant.transform.GetAttachedOWRigidbody().GetVelocity() - transform.GetAttachedOWRigidbody().GetOrigParentBody().GetPointVelocity(transform.position);
                 else
                     direction = occupant.transform.GetAttachedOWRigidbody().GetVelocity() - transform.GetAttachedOWRigidbody().GetVelocity();
+
                 if (Vector3.Dot(teleportationPlane.transform.up, direction) < 0f)
                 {
                     Quaternion rotationDifference;
@@ -162,9 +177,6 @@ namespace OuterPortals.src
                     {
                         var parentBody = gameObject.GetComponentInParent<OWRigidbody>().GetOrigParentBody();
                         relVel = transform.ToRelVelParentBased(occupant.GetVelocity(), oldPos);
-                        NHLogger.Log($"Rel Vel: {relVel}\n" +
-                            $"Portal Velocity: {parentBody.GetPointVelocity(transform.position)}\n" +
-                            $"Occupant Velocity: {occupant.GetVelocity()}");
                     }
                     else
                     {
@@ -172,13 +184,12 @@ namespace OuterPortals.src
                     }
 
                     var relAngVel = transform.ToRelAngVel(occupant.GetAngularVelocity());
-
                     var newPos = linkedPortalTransform.FromRelPos(halfTurn * relPos);
                     occupant.SetPosition(newPos);
                     occupant.SetRotation(linkedPortalTransform.FromRelRot(halfTurn * relRot));
 
                     // If the linked portal has physics, it will be suspended, so the velocity values are not up to date. Instead, get the velocity from the parent at the location of the portal.
-                    if (linkedPortal.isPhysicsReady())
+                    if (linkedPortal != null && linkedPortal.isPhysicsReady())
                     {
                         occupant.SetVelocity(linkedPortalTransform.FromRelVelParentBased(halfTurn * relVel, newPos));
                         occupant.SetAngularVelocity(linkedPortalTransform.FromRelAngVelParentBased(halfTurn * relAngVel));
@@ -196,11 +207,10 @@ namespace OuterPortals.src
                         teleportationOccupants.RemoveAt(i);
                     }
 
-                    if (teleportationOccupants[i].CompareTag("Player")){
-                        NHLogger.Log("After Teleport Player");
-                        NHLogger.Log($"Player Transform: {teleportationOccupants[i].transform.position}");
+                    if (occupant.CompareTag("Player") && linkedPortal.isPhysicsReady())
+                    {
+                        Locator.GetPlayerBody().GetComponent<AlignPlayerWithForce>().SkipNextFrame();
                     }
-
                 }
             }
         }
@@ -211,7 +221,6 @@ namespace OuterPortals.src
             //Matrix4x4 m = Locator.GetPlayerCamera().mainCamera.projectionMatrix;
             cam.ResetProjectionMatrix();
             Matrix4x4 m = cam.projectionMatrix;
-            // if (cam.rect.size != r.size) NHLogger.Log($"changing {this} rect from {cam.rect} to {r}"); 
             cam.rect = r;
             cam.aspect = playerCamera.aspect; // does this need to be set here?
             
@@ -282,17 +291,23 @@ namespace OuterPortals.src
             }
             if (gameObject.transform.parent.gameObject.CompareTag("DynamicPropDetector"))
             {
-                NHLogger.Log("Physics are ready!");
                 physicsReady = true;
                 rigidBody = gameObject.GetComponentInParent<OWRigidbody>();
                 rigidBody.Suspend();
                 rigidBody.OnUnsuspendOWRigidbody += RigidBody_OnUnsuspendOWRigidbody;
+                alignmentForceDetector = gameObject.transform.parent.gameObject.GetComponentsInChildren<AlignmentForceDetector>()[0];
             }
         }
 
         public void FixedUpdate()
         {
             UpdateTeleportOccupants();
+            if (isPhysicsReady())
+            {
+                alignmentForceDetector.AccumulateAcceleration();
+                var force = alignmentForceDetector.GetForceAcceleration();
+                DebugForceDisplayer.transform.localEulerAngles = force;
+            }
         }
 
         // you would think this should be in FixedUpdate since it depends on player movement,
@@ -475,7 +490,6 @@ namespace OuterPortals.src
                 && playerInSector
                 && positionDifference.magnitude < maximumRenderDistance)
             {
-                NHLogger.Log($"{this} visible");
                 OnVisible();
                 lastVisibility = true;
             }
@@ -483,7 +497,6 @@ namespace OuterPortals.src
                 || !playerInSector
                 || positionDifference.magnitude >= maximumRenderDistance))
             {
-                NHLogger.Log($"{this} invisible");
                 OnInvisible();
                 lastVisibility = false;
             }
@@ -533,8 +546,6 @@ namespace OuterPortals.src
                 GameObject portal = GameObject.Find(portal_and_sector.Key);
                 if (portal == null)
                     continue;
-                if (GameObject.Find(portal_and_sector.Key).GetComponent<PortalController>() == null)
-                    NHLogger.LogError("Somehow value is null");
                 GameObject.Find(portal_and_sector.Key).GetComponent<PortalController>().sectorName = portal_and_sector.Value;
             }
         }
