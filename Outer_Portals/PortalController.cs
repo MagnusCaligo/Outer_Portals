@@ -23,7 +23,6 @@ namespace OuterPortals.src
         public String sectorName;
         public GameObject teleportationPlane;
         public GameObject PortalSectorDetector;
-        public GameObject DebugForceDisplayer;
 
         private static readonly List<Camera> cameras = new List<Camera>();
         private bool lastVisibility = false;
@@ -31,11 +30,6 @@ namespace OuterPortals.src
         private bool doTransformations = true;
         private List<OWRigidbody> teleportationOccupants;
         private SectorDetector sectorDetector;
-
-        // Physics Stuff
-        private bool physicsReady = false;  // We can't set the rigid body until NH has added it afterwards
-        private AlignmentForceDetector alignmentForceDetector;
-        private OWRigidbody rigidBody;
 
         // Corners for calculating clipping
         private List<Vector3> corners;
@@ -47,10 +41,7 @@ namespace OuterPortals.src
         public void Start()
         {
 
-            DebugForceDisplayer.SetActive(false);
             var sector = SectorManager.GetRegisteredSectors().Find(sector => sector.name == transform.parent.name);
-            var physics = gameObject.AddComponent<AddPortalPhysics>();
-            physics.Sector = sector;
 
             // Setup Corners
             float radiusOfPortal = transform.localScale.x * (renderPlane.transform.localScale.x / 2f);
@@ -101,20 +92,6 @@ namespace OuterPortals.src
             }
         }
 
-        public bool isPhysicsReady()
-        {
-            return physicsReady;
-        }
-
-        public Vector3 getAlignmentForce()
-        {
-            if (isPhysicsReady())
-            {
-                return alignmentForceDetector.GetAlignmentAcceleration();
-            }
-            return Vector3.zero;
-        }
-
         public void onEntryTeleporationPlane(GameObject obj)
         {
             OWCollider component = obj.GetComponent<OWCollider>();
@@ -148,11 +125,7 @@ namespace OuterPortals.src
 
                 var occupant = teleportationOccupants[i];
                 var direction = Vector3.zero;
-                // Need to get the velocity from the parent if we are using physics becuase the OWRigid body is suspended and won't update values
-                if (isPhysicsReady())
-                    direction = occupant.transform.GetAttachedOWRigidbody().GetVelocity() - transform.GetAttachedOWRigidbody().GetOrigParentBody().GetPointVelocity(transform.position);
-                else
-                    direction = occupant.transform.GetAttachedOWRigidbody().GetVelocity() - transform.GetAttachedOWRigidbody().GetVelocity();
+                direction = occupant.transform.GetAttachedOWRigidbody().GetVelocity() - transform.GetAttachedOWRigidbody().GetVelocity();
 
                 if (Vector3.Dot(teleportationPlane.transform.up, direction) < 0f)
                 {
@@ -172,33 +145,15 @@ namespace OuterPortals.src
                     var relRot = transform.ToRelRot(occupant.GetRotation());
 
                     var relVel = Vector3.zero;
-                    // If we have physics then the body is suspended and we can't get accurate values from the rigid body. Instead, use the parent's rigid body at the locaiton of the portal.
-                    if (isPhysicsReady())
-                    {
-                        var parentBody = gameObject.GetComponentInParent<OWRigidbody>().GetOrigParentBody();
-                        relVel = transform.ToRelVelParentBased(occupant.GetVelocity(), oldPos);
-                    }
-                    else
-                    {
-                        relVel = transform.ToRelVel(occupant.GetVelocity(), oldPos);
-                    }
+                    relVel = transform.ToRelVel(occupant.GetVelocity(), oldPos);
 
                     var relAngVel = transform.ToRelAngVel(occupant.GetAngularVelocity());
                     var newPos = linkedPortalTransform.FromRelPos(halfTurn * relPos);
                     occupant.SetPosition(newPos);
                     occupant.SetRotation(linkedPortalTransform.FromRelRot(halfTurn * relRot));
 
-                    // If the linked portal has physics, it will be suspended, so the velocity values are not up to date. Instead, get the velocity from the parent at the location of the portal.
-                    if (linkedPortal != null && linkedPortal.isPhysicsReady())
-                    {
-                        occupant.SetVelocity(linkedPortalTransform.FromRelVelParentBased(halfTurn * relVel, newPos));
-                        occupant.SetAngularVelocity(linkedPortalTransform.FromRelAngVelParentBased(halfTurn * relAngVel));
-                    }
-                    else
-                    {
-                        occupant.SetVelocity(linkedPortalTransform.FromRelVel(halfTurn * relVel, newPos));
-                        occupant.SetAngularVelocity(linkedPortalTransform.FromRelAngVel(halfTurn * relAngVel));
-                    }
+                    occupant.SetVelocity(linkedPortalTransform.FromRelVel(halfTurn * relVel, newPos));
+                    occupant.SetAngularVelocity(linkedPortalTransform.FromRelAngVel(halfTurn * relAngVel));
 
                     if (!Physics.autoSyncTransforms) Physics.SyncTransforms(); // or else "Player grounded spherecast" complains
                     
@@ -207,8 +162,11 @@ namespace OuterPortals.src
                         teleportationOccupants.RemoveAt(i);
                     }
 
-                    if (occupant.CompareTag("Player") && linkedPortal.isPhysicsReady())
+                    if (occupant.CompareTag("Player"))
                     {
+                        var fa = Locator.GetPlayerBody().GetComponent<ForceApplier>();
+                        if (fa != null)
+                            fa.SkipNextFrame();
                         Locator.GetPlayerBody().GetComponent<AlignPlayerWithForce>().SkipNextFrame();
                     }
                 }
@@ -281,41 +239,15 @@ namespace OuterPortals.src
             SetScissorRect(camera, rect);
         }
 
-        public void CheckPhysicsReady()
-        {
-            // The physics created by NewHorizons comes _after_ this object is created.
-            // So this function checks to see if the the NH stuff is done, then makes modifications to the physics.
-            if (physicsReady)
-            {
-                return;
-            }
-            if (gameObject.transform.parent.gameObject.CompareTag("DynamicPropDetector"))
-            {
-                physicsReady = true;
-                rigidBody = gameObject.GetComponentInParent<OWRigidbody>();
-                rigidBody.Suspend();
-                rigidBody.OnUnsuspendOWRigidbody += RigidBody_OnUnsuspendOWRigidbody;
-                alignmentForceDetector = gameObject.transform.parent.gameObject.GetComponentsInChildren<AlignmentForceDetector>()[0];
-            }
-        }
-
         public void FixedUpdate()
         {
             UpdateTeleportOccupants();
-            if (isPhysicsReady())
-            {
-                alignmentForceDetector.AccumulateAcceleration();
-                var force = alignmentForceDetector.GetForceAcceleration();
-                DebugForceDisplayer.transform.localEulerAngles = force;
-            }
         }
 
         // you would think this should be in FixedUpdate since it depends on player movement,
         // but doing that makes it lag one frame behind
         public void Update()
         {
-
-            CheckPhysicsReady();
 
             UpdateVisibility();
             if (!doTransformations)

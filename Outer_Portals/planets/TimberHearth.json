@@ -7,7 +7,6 @@
             "assetBundle": "assets/portal/portal_props",
             "path": "Assets/Custom Prefabs/Portal.prefab",
             "parentPath": "Sector_TH/Sector_Village/Sector_StartingCamp",
-            "hasPhysics":  true,
             "physicsRadius": 0,
             "position": {
               "x": 14.52596,
@@ -78,7 +77,6 @@
                 "rename": "th_to_bh",
                 "assetBundle": "assets/portal/portal_props",
                 "path": "Assets/Custom Prefabs/Portal.prefab",
-
                 "position": {"x": -12.07053, "y": 61.27309, "z": 219.813},
                 "rotation": {"x": 44.75364, "y": 70.46476, "z": 66.35551},
                 "normal": {"x": -0.04019898, "y": 0.2848094, "z": 0.9577408},
