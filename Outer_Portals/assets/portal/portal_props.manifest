@@ -1,12 +1,12 @@
 ManifestFileVersion: 0
-CRC: 1786540307
+CRC: 287992271
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: c5b1acd7b35b912ed651105172ceb4a6
+    Hash: 1a40c295de2dbe95c02d0cd68ccd8787
   TypeTreeHash:
     serializedVersion: 2
-    Hash: 0e99e3459a668f81da0d82ec1e9fdd65
+    Hash: 715a319ed3ce59f345f3df06b4fcd0c0
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -25,8 +25,6 @@ ClassTypes:
   Script: {instanceID: 0}
 - Class: 48
   Script: {instanceID: 0}
-- Class: 54
-  Script: {instanceID: 0}
 - Class: 64
   Script: {instanceID: 0}
 - Class: 65
@@ -37,8 +35,6 @@ ClassTypes:
   Script: {fileID: 11500000, guid: fbb2498122f7e23a2e87544333cb528f, type: 3}
 - Class: 114
   Script: {fileID: 11500000, guid: a00a4b529366e7a35af5046cca370e8e, type: 3}
-- Class: 114
-  Script: {fileID: 11500000, guid: d3e77ae3309b6f323de07b456da83fb0, type: 3}
 - Class: 114
   Script: {fileID: 11500000, guid: a223d69493f03f4a8e6bda998c52d250, type: 3}
 - Class: 114
@@ -53,11 +49,8 @@ ClassTypes:
   Script: {fileID: -67699756, guid: 5c9dd17c8aedc3d4b803ae214f2779ce, type: 3}
 - Class: 115
   Script: {instanceID: 0}
-- Class: 135
-  Script: {instanceID: 0}
 SerializeReferenceClassIdentifiers: []
 Assets:
-- Assets/Custom Prefabs/TestBall.prefab
 - Assets/Custom Prefabs/New Material 1.mat
 - Assets/Custom Prefabs/Portal.prefab
 - Assets/Custom Prefabs/Mirror Render Texture.renderTexture

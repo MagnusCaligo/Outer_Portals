@@ -30,6 +30,7 @@ namespace OuterPortals.src
         private bool doTransformations = true;
         private List<OWRigidbody> teleportationOccupants;
         private SectorDetector sectorDetector;
+        private OWCamera owCamera;
 
         // Corners for calculating clipping
         private List<Vector3> corners;
@@ -58,11 +59,6 @@ namespace OuterPortals.src
                 playerCameraController = Locator.GetPlayerCameraController();
 
             cameras.Add(camera);
-            // TODO: do camera post processing properly, use nh Layer class for mask 
-            camera.cullingMask = 4194321;
-            //camera.cullingMask = 38025183;
-            camera.backgroundColor = Color.black;
-            camera.farClipPlane = 50000;
 
             visibilityObject = renderPlane.GetComponent<VisibilityObject>();
             teleportationOccupants = new List<OWRigidbody>();
@@ -77,6 +73,8 @@ namespace OuterPortals.src
                 triggerVolume.OnEntry += onEntryTeleporationPlane;
                 triggerVolume.OnExit += onLeaveTeleportationPlane;
             }
+
+            owCamera = gameObject.GetComponentsInChildren<OWCamera>()[0];
 
         }
         private void RigidBody_OnUnsuspendOWRigidbody(OWRigidbody suspendedBody)
@@ -363,8 +361,11 @@ namespace OuterPortals.src
                 cameraMaterial.mainTexture = null;
                 renderPlane.GetComponent<MeshRenderer>().sharedMaterial = null;
 
-                renderTexture.Release();
-                DestroyImmediate(renderTexture);
+                if (renderTexture != null)
+                {
+                    renderTexture.Release();
+                    DestroyImmediate(renderTexture);
+                }
                 DestroyImmediate(cameraMaterial);
             }
 
