@@ -11,7 +11,7 @@
     <DebugType>portable</DebugType>
     
     <!--temporary: makes it so that the dll name is the same as the old thing-->
-    <AssemblyName>First Test Mod</AssemblyName>
+    <AssemblyName>OuterPortals</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="OWML" Version="2.13.0" />

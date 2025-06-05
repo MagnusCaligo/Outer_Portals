@@ -1,21 +1,64 @@
 ﻿{
-    "name": "Timber Hearth",
+    "name": "TIMBER_HEARTH",
     "Props": {
         "details": [
-            {
-                "rename": "portal1",
-                "assetBundle": "assets/portal/portal_props",
-                "path": "Assets/Custom Prefabs/Mirror.prefab",
-                "parentPath": "TimberHearth_Body/Sector_TH/Sector_Village/Sector_StartingCamp",
-                "position": {"x": 14.52596, "y": -49.14703, "z": 183.8636},
-                "rotation": {"x": 51.9872, "y": 253.8924, "z": 244.8227},
-                "normal": {"x": 0.07093513, "y": -0.2619901, "z": 0.9624603},
-                "stretch": {"x": 1, "y": 1, "z": 1}
+          {
+            "rename": "portal1",
+            "assetBundle": "assets/portal/portal_props",
+            "path": "Assets/Custom Prefabs/Portal.prefab",
+            "parentPath": "Sector_TH/Sector_Village/Sector_StartingCamp",
+            "physicsRadius": 0,
+            "position": {
+              "x": 14.52596,
+              "y": -49.14703,
+              "z": 183.8636
             },
-            {
+            "rotation": {
+              "x": 51.9872,
+              "y": 253.8924,
+              "z": 244.8227
+            },
+            "normal": {
+              "x": 0.07093513,
+              "y": -0.2619901,
+              "z": 0.9624603
+            },
+            "stretch": {
+              "x": 1,
+              "y": 1,
+              "z": 1
+            }
+          },
+          {
+            "rename": "far_side",
+            "assetBundle": "assets/portal/portal_props",
+            "path": "Assets/Custom Prefabs/Portal.prefab",
+            "parentPath": "Sector_TH/Sector_Village/Sector_Observatory",
+            "position": {
+              "x": 61.29608,
+              "y": 171.8322,
+              "z": -170.6476
+            },
+            "rotation": {
+              "x": 32.42822,
+              "y": 112.8534,
+              "z": 328.6712
+            },
+            "normal": {
+              "x": 0.2201662,
+              "y": 0.7209975,
+              "z": -0.6570311
+            },
+            "stretch": {
+              "x": 1,
+              "y": 1,
+              "z": 1
+            }
+          },
+          {
                 "rename": "th_to_gd",
                 "assetBundle": "assets/portal/portal_props",
-                "path": "Assets/Custom Prefabs/Mirror.prefab",
+                "path": "Assets/Custom Prefabs/Portal.prefab",
                 "position": {"x": -13.88002, "y": 73.23696, "z": 215.9117},
                 "rotation": {"x": 300.2793, "y": 122.4588, "z": 50.13843},
                 "normal": {"x": -0.05506486, "y": 0.3231695, "z": 0.9447376},
@@ -24,7 +67,8 @@
             {
                 "rename": "th_to_et",
                 "assetBundle": "assets/portal/portal_props",
-                "path": "Assets/Custom Prefabs/Mirror.prefab",
+                "path": "Assets/Custom Prefabs/Portal.prefab",
+                "physicsRadius": 0,
                 "position": {"x": -24.5127, "y": 59.96667, "z": 219.1242},
                 "rotation": {"x": 41.26305, "y": 277.9634, "z": 291.0456},
                 "normal": {"x": -0.1052559, "y": 0.2699402, "z": 0.957107},
@@ -32,8 +76,7 @@
             {
                 "rename": "th_to_bh",
                 "assetBundle": "assets/portal/portal_props",
-                "path": "Assets/Custom Prefabs/Mirror.prefab",
-
+                "path": "Assets/Custom Prefabs/Portal.prefab",
                 "position": {"x": -12.07053, "y": 61.27309, "z": 219.813},
                 "rotation": {"x": 44.75364, "y": 70.46476, "z": 66.35551},
                 "normal": {"x": -0.04019898, "y": 0.2848094, "z": 0.9577408},
@@ -41,7 +84,7 @@
             {
                 "rename": "th_to_ar",
                 "assetBundle": "assets/portal/portal_props",
-                "path": "Assets/Custom Prefabs/Mirror.prefab",
+                "path": "Assets/Custom Prefabs/Portal.prefab",
                 "position": {"x": -28.12948, "y": 67.61905, "z": 216.4432},
                 "rotation": {"x": 354.4831, "y": 261.6691, "z": 287.423},
                 "normal": {"x": -0.109759, "y": 0.2980365, "z": 0.9482232},

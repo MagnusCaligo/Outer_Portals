@@ -5,15 +5,16 @@ using UnityEngine;
 using HarmonyLib;
 using NewHorizons.Utility.OWML;
 using NewHorizons.Handlers;
+using NewHorizons.Components;
 
-namespace First_Test_Mod.src
+namespace OuterPortals.src
 {
     // see https://github.com/TerrificTrifid/ow-nh-quasar-project/blob/main/QuasarProject/PortalController.cs as well
     [HarmonyPatch]
-    internal class PortalController : MonoBehaviour
+    public class PortalController : MonoBehaviour
     {
 
-        public static int maximumRenderDistance = 1000;  // This is how close you need to be to a portal before it will actually start rendering. Used for performance.
+        public static int maximumRenderDistance = 100;  // This is how close you need to be to a portal before it will actually start rendering. Used for performance.
 
         public Camera camera;
         public GameObject renderPlane;
@@ -29,6 +30,7 @@ namespace First_Test_Mod.src
         private bool doTransformations = true;
         private List<OWRigidbody> teleportationOccupants;
         private SectorDetector sectorDetector;
+        private OWCamera owCamera;
 
         // Corners for calculating clipping
         private List<Vector3> corners;
@@ -38,29 +40,31 @@ namespace First_Test_Mod.src
 
         public void Start()
         {
+            var sector = SectorManager.GetRegisteredSectors().Find(sector => sector.name == transform.parent.name);
+            Locator.GetPlayerCamera().GetComponentInParent<PlanetaryFogImageEffect>().enabled = false;
+
+            gameObject.GetComponentInChildren<PostProcessingBehaviour>().profile = Locator.GetPlayerCamera().GetComponentInParent<PostProcessingBehaviour>().profile;
+
             // Setup Corners
             float radiusOfPortal = transform.localScale.x * (renderPlane.transform.localScale.x / 2f);
             corners = new List<Vector3>();
             corners.Add(new Vector3(-radiusOfPortal, 0, 0));
-            corners.Add(new Vector3(-radiusOfPortal, 2*radiusOfPortal, 0));
+            corners.Add(new Vector3(-radiusOfPortal, 2 * radiusOfPortal, 0));
             corners.Add(new Vector3(radiusOfPortal, 0, 0));
-            corners.Add(new Vector3(radiusOfPortal, 2*radiusOfPortal, 0));
+            corners.Add(new Vector3(radiusOfPortal, 2 * radiusOfPortal, 0));
 
             if (playerCamera == null)
                 playerCamera = Locator.GetPlayerCamera().mainCamera;
 
+            if (playerCameraController == null)
+                playerCameraController = Locator.GetPlayerCameraController();
+
             cameras.Add(camera);
-            // TODO: do camera post processing properly, use nh Layer class for mask 
-            camera.cullingMask = 4194321;
-            camera.backgroundColor = Color.black;
-            camera.farClipPlane = 50000;
-
-
 
             visibilityObject = renderPlane.GetComponent<VisibilityObject>();
             teleportationOccupants = new List<OWRigidbody>();
 
-            if (sectorDetector == null) { 
+            if (sectorDetector == null) {
                 sectorDetector = PortalSectorDetector.GetComponent<SectorDetector>();
             }
 
@@ -71,11 +75,25 @@ namespace First_Test_Mod.src
                 triggerVolume.OnExit += onLeaveTeleportationPlane;
             }
 
+            owCamera = gameObject.GetComponentsInChildren<OWCamera>()[0];
+            // Start invisible
+            OnInvisible();
+        }
+        private void RigidBody_OnUnsuspendOWRigidbody(OWRigidbody suspendedBody)
+        {
+            // Function for keeping the portals permenantly suspended.
+            // However, we have to prevent the colliders from disabling, so we re-enable them after re-suspending the OWRigidBody.
+            suspendedBody.Suspend();
+
+            var _childColliders = suspendedBody.GetComponentsInChildren<Collider>();
+            for (int i = 0; i < _childColliders.Length; i++)
+            {
+                _childColliders[i].gameObject.GetAddComponent<OWCollider>().OnUnsuspendOWRigidbody(suspendedBody);
+            }
         }
 
         public void onEntryTeleporationPlane(GameObject obj)
         {
-            NHLogger.Log("Entered trigger volume");
             OWCollider component = obj.GetComponent<OWCollider>();
             if (component.CompareTag("PlayerDetector") || component.CompareTag("ProbeDetector"))
             {
@@ -86,7 +104,6 @@ namespace First_Test_Mod.src
 
         public void onLeaveTeleportationPlane(GameObject obj)
         {
-            NHLogger.Log("Leave Trigger Volume");
             OWCollider component = obj.GetComponent<OWCollider>();
             if (component.CompareTag("PlayerDetector") || component.CompareTag("ProbeDetector"))
             {
@@ -102,8 +119,14 @@ namespace First_Test_Mod.src
             // iterate backwards since we remove
             for (var i = teleportationOccupants.Count - 1; i >= 0; i--)
             {
+
+                if (teleportationOccupants[i].CompareTag("Player")){
+                }
+
                 var occupant = teleportationOccupants[i];
-                Vector3 direction = occupant.transform.GetAttachedOWRigidbody().GetVelocity() - transform.GetAttachedOWRigidbody().GetVelocity();
+                var direction = Vector3.zero;
+                direction = occupant.transform.GetAttachedOWRigidbody().GetVelocity() - transform.GetAttachedOWRigidbody().GetVelocity();
+
                 if (Vector3.Dot(teleportationPlane.transform.up, direction) < 0f)
                 {
                     Quaternion rotationDifference;
@@ -120,12 +143,15 @@ namespace First_Test_Mod.src
                     var oldPos = occupant.GetPosition();
                     var relPos = transform.ToRelPos(oldPos);
                     var relRot = transform.ToRelRot(occupant.GetRotation());
-                    var relVel = transform.ToRelVel(occupant.GetVelocity(), oldPos);
-                    var relAngVel = transform.ToRelAngVel(occupant.GetAngularVelocity());
 
+                    var relVel = Vector3.zero;
+                    relVel = transform.ToRelVel(occupant.GetVelocity(), oldPos);
+
+                    var relAngVel = transform.ToRelAngVel(occupant.GetAngularVelocity());
                     var newPos = linkedPortalTransform.FromRelPos(halfTurn * relPos);
                     occupant.SetPosition(newPos);
                     occupant.SetRotation(linkedPortalTransform.FromRelRot(halfTurn * relRot));
+
                     occupant.SetVelocity(linkedPortalTransform.FromRelVel(halfTurn * relVel, newPos));
                     occupant.SetAngularVelocity(linkedPortalTransform.FromRelAngVel(halfTurn * relAngVel));
 
@@ -136,6 +162,15 @@ namespace First_Test_Mod.src
                         teleportationOccupants.RemoveAt(i);
                     }
 
+                    if (occupant.CompareTag("Player"))
+                    {
+                        var fa = Locator.GetPlayerBody().GetComponent<ForceApplier>();
+                        if (fa != null)
+                            fa.SkipNextFrame();
+                        Locator.GetPlayerBody().GetComponent<AlignPlayerWithForce>().SkipNextFrame();
+                    }
+                    Vector3 scaleChange = occupant.transform.localScale - (transform.localScale - linkedPortalTransform.localScale);
+                    occupant.transform.localScale = scaleChange;
                 }
             }
         }
@@ -146,7 +181,6 @@ namespace First_Test_Mod.src
             //Matrix4x4 m = Locator.GetPlayerCamera().mainCamera.projectionMatrix;
             cam.ResetProjectionMatrix();
             Matrix4x4 m = cam.projectionMatrix;
-            // if (cam.rect.size != r.size) NHLogger.Log($"changing {this} rect from {cam.rect} to {r}"); 
             cam.rect = r;
             cam.aspect = playerCamera.aspect; // does this need to be set here?
             
@@ -216,6 +250,7 @@ namespace First_Test_Mod.src
         // but doing that makes it lag one frame behind
         public void Update()
         {
+
             UpdateVisibility();
             if (!doTransformations)
                 return;
@@ -272,7 +307,7 @@ namespace First_Test_Mod.src
             doTransformations = true;
 
             {
-                var cameraMaterial = new Material(First_Test_Mod.portalShader);
+                var cameraMaterial = new Material(OuterPortals.portalShader);
 
                 camera.targetTexture = new RenderTexture(Screen.width, Screen.height, 24);
                 cameraMaterial.mainTexture = camera.targetTexture;
@@ -330,8 +365,11 @@ namespace First_Test_Mod.src
                 cameraMaterial.mainTexture = null;
                 renderPlane.GetComponent<MeshRenderer>().sharedMaterial = null;
 
-                renderTexture.Release();
-                DestroyImmediate(renderTexture);
+                if (renderTexture != null)
+                {
+                    renderTexture.Release();
+                    DestroyImmediate(renderTexture);
+                }
                 DestroyImmediate(cameraMaterial);
             }
 
@@ -389,7 +427,6 @@ namespace First_Test_Mod.src
                 && playerInSector
                 && positionDifference.magnitude < maximumRenderDistance)
             {
-                NHLogger.Log($"{this} visible");
                 OnVisible();
                 lastVisibility = true;
             }
@@ -397,7 +434,6 @@ namespace First_Test_Mod.src
                 || !playerInSector
                 || positionDifference.magnitude >= maximumRenderDistance))
             {
-                NHLogger.Log($"{this} invisible");
                 OnInvisible();
                 lastVisibility = false;
             }
@@ -417,27 +453,27 @@ namespace First_Test_Mod.src
                 GameObject exit_portal = GameObject.Find(link.Value);
                 if (entrance_portal == null)
                 {
-                    First_Test_Mod.Instance.ModHelper.Console.WriteLine($"Error: Failed to find portal with name {link.Key}");
+                    OuterPortals.Instance.ModHelper.Console.WriteLine($"Error: Failed to find portal with name {link.Key}");
                     continue;
                 }
                 if (exit_portal == null)
                 {
-                    First_Test_Mod.Instance.ModHelper.Console.WriteLine($"Error: Failed to find portal with name {link.Value}");
+                    OuterPortals.Instance.ModHelper.Console.WriteLine($"Error: Failed to find portal with name {link.Value}");
                     continue;
                 }
                 PortalController entr_portal_controller = entrance_portal.GetComponent<PortalController>();
                 PortalController exit_portal_controller = exit_portal.GetComponent<PortalController> ();
                 if (entr_portal_controller == null)
                 {
-                    First_Test_Mod.Instance.ModHelper.Console.WriteLine($"Entrance portal with name {link.Key} does not have a portal controller.");
+                    OuterPortals.Instance.ModHelper.Console.WriteLine($"Entrance portal with name {link.Key} does not have a portal controller.");
                     continue;
                 }
                 if (exit_portal_controller == null)
                 {
-                    First_Test_Mod.Instance.ModHelper.Console.WriteLine($"Exit portal with name {link.Value} does not have a portal controller.");
+                    OuterPortals.Instance.ModHelper.Console.WriteLine($"Exit portal with name {link.Value} does not have a portal controller.");
                     continue;
                 }
-                First_Test_Mod.Instance.ModHelper.Console.WriteLine($"Linking {link.Key} to {link.Value}");
+                OuterPortals.Instance.ModHelper.Console.WriteLine($"Linking {link.Key} to {link.Value}");
                 entr_portal_controller.linkedPortal = exit_portal_controller;
                 entr_portal_controller.linkedToSelf = false;
             }
