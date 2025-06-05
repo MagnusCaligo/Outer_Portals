@@ -6,6 +6,7 @@ using HarmonyLib;
 using NewHorizons.Utility.OWML;
 using NewHorizons.Handlers;
 using NewHorizons.Components;
+using UnityEngine.PostProcessing;
 
 namespace OuterPortals.src
 {
@@ -56,12 +57,9 @@ namespace OuterPortals.src
             if (playerCamera == null)
                 playerCamera = Locator.GetPlayerCamera().mainCamera;
 
-            if (playerCameraController == null)
-                playerCameraController = Locator.GetPlayerCameraController();
-
             cameras.Add(camera);
 
-            visibilityObject = renderPlane.GetComponent<VisibilityObject>();
+            visibilityObject = renderPlane.GetAddComponent<VisibilityObject>();
             teleportationOccupants = new List<OWRigidbody>();
 
             if (sectorDetector == null) {
