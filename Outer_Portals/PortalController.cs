@@ -76,7 +76,8 @@ namespace OuterPortals.src
             }
 
             owCamera = gameObject.GetComponentsInChildren<OWCamera>()[0];
-
+            // Start invisible
+            OnInvisible();
         }
         private void RigidBody_OnUnsuspendOWRigidbody(OWRigidbody suspendedBody)
         {
