@@ -35,14 +35,15 @@ namespace OuterPortals.src
         // Corners for calculating clipping
         private List<Vector3> corners;
         private static Camera playerCamera;
-        private static PlayerCameraController playerCameraController;
         
         private static readonly Quaternion halfTurn = Quaternion.Euler(0.0f, 180.0f, 0.0f);
 
         public void Start()
         {
-
             var sector = SectorManager.GetRegisteredSectors().Find(sector => sector.name == transform.parent.name);
+            Locator.GetPlayerCamera().GetComponentInParent<PlanetaryFogImageEffect>().enabled = false;
+
+            gameObject.GetComponentInChildren<PostProcessingBehaviour>().profile = Locator.GetPlayerCamera().GetComponentInParent<PostProcessingBehaviour>().profile;
 
             // Setup Corners
             float radiusOfPortal = transform.localScale.x * (renderPlane.transform.localScale.x / 2f);
@@ -167,6 +168,8 @@ namespace OuterPortals.src
                             fa.SkipNextFrame();
                         Locator.GetPlayerBody().GetComponent<AlignPlayerWithForce>().SkipNextFrame();
                     }
+                    Vector3 scaleChange = occupant.transform.localScale - (transform.localScale - linkedPortalTransform.localScale);
+                    occupant.transform.localScale = scaleChange;
                 }
             }
         }
