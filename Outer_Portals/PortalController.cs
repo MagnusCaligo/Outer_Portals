@@ -26,6 +26,7 @@ namespace OuterPortals.src
         public GameObject PortalSectorDetector;
 
         private static readonly List<Camera> cameras = new List<Camera>();
+        private static List<PortalController> portalControllers = new List<PortalController>();
         private bool lastVisibility = false;
         private VisibilityObject visibilityObject;
         private bool doTransformations = true;
@@ -58,6 +59,10 @@ namespace OuterPortals.src
                 playerCamera = Locator.GetPlayerCamera().mainCamera;
 
             cameras.Add(camera);
+            camera.targetTexture = cameraRenderTexture;
+            cameraMaterial.mainTexture = cameraRenderTexture;
+            renderPlane.GetComponent<MeshRenderer>().sharedMaterial = cameraMaterial;
+            portalControllers.Add(this);
 
             visibilityObject = renderPlane.GetAddComponent<VisibilityObject>();
             teleportationOccupants = new List<OWRigidbody>();
@@ -74,20 +79,10 @@ namespace OuterPortals.src
             }
 
             owCamera = gameObject.GetComponentsInChildren<OWCamera>()[0];
+            owCamera._postProcessingSettings = Locator.GetPlayerCamera().postProcessingSettings;
+            Locator.GetPlayerBody().GetComponentInChildren<OWCamera>().onThisPreRender.AddListener((OWCamera) => this.checkVisibilityOfPortalsFromPlayerCamera());
             // Start invisible
             OnInvisible();
-        }
-        private void RigidBody_OnUnsuspendOWRigidbody(OWRigidbody suspendedBody)
-        {
-            // Function for keeping the portals permenantly suspended.
-            // However, we have to prevent the colliders from disabling, so we re-enable them after re-suspending the OWRigidBody.
-            suspendedBody.Suspend();
-
-            var _childColliders = suspendedBody.GetComponentsInChildren<Collider>();
-            for (int i = 0; i < _childColliders.Length; i++)
-            {
-                _childColliders[i].gameObject.GetAddComponent<OWCollider>().OnUnsuspendOWRigidbody(suspendedBody);
-            }
         }
 
         public void onEntryTeleporationPlane(GameObject obj)
@@ -98,6 +93,11 @@ namespace OuterPortals.src
                 var body = obj.GetComponentInParent<OWRigidbody>();
                 teleportationOccupants.Add(body);
             }
+        }
+
+        public VisibilityObject GetVisibilityObject()
+        {
+            return visibilityObject;
         }
 
         public void onLeaveTeleportationPlane(GameObject obj)
@@ -249,7 +249,8 @@ namespace OuterPortals.src
         public void Update()
         {
 
-            UpdateVisibility();
+            //UpdateVisibility();
+
             if (!doTransformations)
                 return;
 
@@ -263,28 +264,45 @@ namespace OuterPortals.src
                 output_portal_transform = linkedPortal.transform;
             }
 
-            // Adjust teleportation plane depending on direction player is facing
-            // If the player is facing backwards, we need to move the teleportation back a little bit to prevent the camera from clipping through the portal
-            float adjustment = (-Vector3.Dot(playerCamera.transform.forward, transform.forward) + 1f) / 2f;
-            teleportationPlane.transform.SetLocalPositionZ(adjustment);
+            doMoveCameraRelativeToPosition(playerCamera.transform.position, playerCamera.transform.rotation, output_portal_transform);
+            
+            CalculateViewportRect();
+        }
 
+        public void calculateRelativeCamera(Vector3 camera_position, Quaternion camera_rotation, Transform portal, out Vector3 out_camera_position, out Quaternion out_camera_rotation)
+        {
+            // Calculates where the camera should be on the otherside of the portal
 
             // apply transformation based on player camera
             {
-                var relPos = transform.ToRelPos(playerCamera.transform.position);
-                var relRot = transform.ToRelRot(playerCamera.transform.rotation);
+                var relPos = transform.ToRelPos(camera_position);
+                var relRot = transform.ToRelRot(camera_rotation);
 
-                camera.transform.position = output_portal_transform.FromRelPos(halfTurn * relPos);
-                camera.transform.rotation = output_portal_transform.FromRelRot(halfTurn * relRot);
+                out_camera_position = portal.FromRelPos(halfTurn * relPos);
+                out_camera_rotation = portal.FromRelRot(halfTurn * relRot);
             }
+        }
+
+        public void doMoveCameraRelativeToPosition(Vector3 camera_position, Quaternion camera_rotation, Transform output_portal)
+        {
+            // Adjust teleportation plane depending on direction player is facing
+            // If the player is facing backwards, we need to move the teleportation back a little bit to prevent the camera from clipping through the portal
+            float adjustment = (-Vector3.Dot(camera_rotation * Vector3.forward, transform.forward) + 1f) / 2f;
+            teleportationPlane.transform.SetLocalPositionZ(adjustment);
+
+            Vector3 new_position;
+            Quaternion new_rotation;
+            calculateRelativeCamera(camera_position, camera_rotation, output_portal, out new_position, out new_rotation);
+            camera.transform.position = new_position;
+            camera.transform.rotation = new_rotation;
 
             // Calculate clip distance to maximize camera through portal while minimizing rendering stuff between camera and portal
             {
                 Plane clip = new Plane(camera.transform.forward, camera.transform.position);
 
                 // Find Closest Corner
-                Vector3 closestCorner = corners.OrderBy(x => clip.GetDistanceToPoint(output_portal_transform.TransformPoint(x))).First();
-                closestCorner = output_portal_transform.TransformPoint(closestCorner);
+                Vector3 closestCorner = corners.OrderBy(x => clip.GetDistanceToPoint(output_portal.TransformPoint(x))).First();
+                closestCorner = output_portal.TransformPoint(closestCorner);
 
                 // Shift plane to be in line with corner
                 clip = new Plane(camera.transform.forward, closestCorner);
@@ -295,23 +313,66 @@ namespace OuterPortals.src
 
                 camera.nearClipPlane = closestDistance;
             }
-            
-            CalculateViewportRect();
+
+        }
+
+        public void checkVisibilityOfOtherPortals(int ttl)
+        {
+            if (ttl - 1 < 0)
+                return;
+            foreach (PortalController pc in portalControllers)
+            {
+                if (pc == this || pc.enabled == false ) continue;
+                if (linkedPortal == null || pc == linkedPortal) continue;
+                var distance = (linkedPortal.transform.position - pc.transform.position).magnitude;
+                if (distance > maximumRenderDistance)
+                    continue;
+                var visible = pc.GetVisibilityObject().CheckVisibilityFromProbe(owCamera);
+                if (visible)
+                {
+                    if (pc.linkedPortal == null) continue;
+                    Vector3 camera_location = Vector3.zero;
+                    Quaternion camera_rotation = Quaternion.identity;
+                    Vector3 oldCameraLocation = pc.camera.transform.position;
+                    Quaternion oldCameraRotation = pc.camera.transform.rotation;
+                    pc.OnVisible();
+                    pc.doMoveCameraRelativeToPosition(camera.transform.position, camera.transform.rotation, pc.linkedPortal.transform);
+                    pc.checkVisibilityOfOtherPortals(ttl - 1);
+                    pc.owCamera.Render();
+                    pc.camera.transform.position = oldCameraLocation;
+                    pc.camera.transform.rotation = oldCameraRotation;
+                    continue;
+                }
+                pc.OnInvisible();
+            }
+
+        }
+
+        public void checkVisibilityOfPortalsFromPlayerCamera()
+        {
+            foreach (PortalController pc in portalControllers)
+            {
+                var distance = (playerCamera.transform.position - pc.transform.position).magnitude; 
+                if (distance > maximumRenderDistance) continue;
+                if (pc.GetVisibilityObject().IsVisible())
+                {
+                    pc.OnVisible();
+                    pc.checkVisibilityOfOtherPortals(3);
+                    pc.owCamera.Render();
+                    continue;
+                }
+                pc.OnInvisible();
+            }
+
         }
 
         public void OnVisible()
         {
-            camera.enabled = true;
+            if (lastVisibility)
+                return;
+            lastVisibility = true;
             doTransformations = true;
-
-            {
-                var cameraMaterial = new Material(OuterPortals.portalShader);
-
-                camera.targetTexture = new RenderTexture(Screen.width, Screen.height, 24);
-                cameraMaterial.mainTexture = camera.targetTexture;
-
-                renderPlane.GetComponent<MeshRenderer>().sharedMaterial = cameraMaterial;
-            }
+            owCamera.SetEnabled(true);
 
             if (linkedPortal == null)
                 return;
@@ -352,24 +413,11 @@ namespace OuterPortals.src
         
         public void OnInvisible()
         {
-            camera.enabled = false;
+            if (lastVisibility == false)
+                return;
+            lastVisibility = false;
+
             doTransformations = false;
-
-            {
-                var cameraMaterial = renderPlane.GetComponent<MeshRenderer>().sharedMaterial;
-                var renderTexture = camera.targetTexture;
-
-                camera.targetTexture = null;
-                cameraMaterial.mainTexture = null;
-                renderPlane.GetComponent<MeshRenderer>().sharedMaterial = null;
-
-                if (renderTexture != null)
-                {
-                    renderTexture.Release();
-                    DestroyImmediate(renderTexture);
-                }
-                DestroyImmediate(cameraMaterial);
-            }
 
             if (linkedPortal == null)
                 return;
@@ -440,6 +488,9 @@ namespace OuterPortals.src
         public void OnDestroy()
         {
             cameras.Remove(camera);
+            portalControllers.Remove(this);
+            DestroyImmediate(cameraRenderTexture);
+            DestroyImmediate(cameraMaterial);
             OnInvisible(); // to deallocate
         }
 
