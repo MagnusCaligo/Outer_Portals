@@ -162,9 +162,8 @@ namespace OuterPortals.src
 
                     if (occupant.CompareTag("Player"))
                     {
-                        var fa = Locator.GetPlayerBody().GetComponent<ForceApplier>();
-                        if (fa != null)
-                            fa.SkipNextFrame();
+                        // copied from DreamWorldController
+                        Locator.GetPlayerDetector().GetComponent<ForceApplier>().SkipNextFrame();
                         Locator.GetPlayerBody().GetComponent<AlignPlayerWithForce>().SkipNextFrame();
                     }
                     Vector3 scaleChange = occupant.transform.localScale - (transform.localScale - linkedPortalTransform.localScale);
