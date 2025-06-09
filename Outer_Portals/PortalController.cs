@@ -33,6 +33,9 @@ namespace OuterPortals.src
         private List<OWRigidbody> teleportationOccupants;
         private SectorDetector sectorDetector;
         private OWCamera owCamera;
+        private bool selfVisible = false;
+        private static RenderTexture tempTexture;
+        private static RenderTexture oldTexture = null;
 
         // Corners for calculating clipping
         private List<Vector3> corners;
@@ -40,8 +43,14 @@ namespace OuterPortals.src
         
         private static readonly Quaternion halfTurn = Quaternion.Euler(0.0f, 180.0f, 0.0f);
 
+        private Material cameraMaterial = new Material(OuterPortals.portalShader);
+        private RenderTexture cameraRenderTexture = new RenderTexture(Screen.width, Screen.height, 24);
+
         public void Start()
         {
+
+            if (tempTexture == null)
+                tempTexture = new RenderTexture(Screen.width, Screen.height, 24);
             var sector = SectorManager.GetRegisteredSectors().Find(sector => sector.name == transform.parent.name);
             Locator.GetPlayerCamera().GetComponentInParent<PlanetaryFogImageEffect>().enabled = false;
 
@@ -297,7 +306,7 @@ namespace OuterPortals.src
             camera.transform.rotation = new_rotation;
 
             // Calculate clip distance to maximize camera through portal while minimizing rendering stuff between camera and portal
-            {
+            if (!selfVisible) {
                 Plane clip = new Plane(camera.transform.forward, camera.transform.position);
 
                 // Find Closest Corner
@@ -322,7 +331,7 @@ namespace OuterPortals.src
                 return;
             foreach (PortalController pc in portalControllers)
             {
-                if (pc == this || pc.enabled == false ) continue;
+                if (pc.enabled == false ) continue;
                 if (linkedPortal == null || pc == linkedPortal) continue;
                 var distance = (linkedPortal.transform.position - pc.transform.position).magnitude;
                 if (distance > maximumRenderDistance)
@@ -331,16 +340,32 @@ namespace OuterPortals.src
                 if (visible)
                 {
                     if (pc.linkedPortal == null) continue;
+
+                    if (pc == this)
+                    {
+                        selfVisible = true;
+                        oldTexture = pc.camera.targetTexture;
+                        pc.camera.targetTexture = tempTexture;
+                        pc.owCamera.targetTexture = tempTexture;
+                    }
                     Vector3 camera_location = Vector3.zero;
                     Quaternion camera_rotation = Quaternion.identity;
                     Vector3 oldCameraLocation = pc.camera.transform.position;
                     Quaternion oldCameraRotation = pc.camera.transform.rotation;
                     pc.OnVisible();
                     pc.doMoveCameraRelativeToPosition(camera.transform.position, camera.transform.rotation, pc.linkedPortal.transform);
-                    pc.checkVisibilityOfOtherPortals(ttl - 1);
+                    if (pc != this)
+                        pc.checkVisibilityOfOtherPortals(ttl - 1);
                     pc.owCamera.Render();
                     pc.camera.transform.position = oldCameraLocation;
                     pc.camera.transform.rotation = oldCameraRotation;
+                    if (pc == this && oldTexture != null)
+                    {
+                        pc.cameraMaterial.mainTexture = tempTexture;
+                        pc.renderPlane.GetComponent<MeshRenderer>().sharedMaterial = pc.cameraMaterial;
+                        tempTexture = oldTexture;
+                    }
+
                     continue;
                 }
                 pc.OnInvisible();
@@ -356,12 +381,13 @@ namespace OuterPortals.src
                 if (distance > maximumRenderDistance) continue;
                 if (pc.GetVisibilityObject().IsVisible())
                 {
+                    pc.checkVisibilityOfOtherPortals(1);
                     pc.OnVisible();
-                    pc.checkVisibilityOfOtherPortals(3);
                     pc.owCamera.Render();
                     continue;
                 }
                 pc.OnInvisible();
+                selfVisible = false;
             }
 
         }
