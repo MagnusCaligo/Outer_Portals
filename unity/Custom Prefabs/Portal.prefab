@@ -277,10 +277,6 @@ GameObject:
   - component: {fileID: 2774942603269721976}
   - component: {fileID: 1403949633640416145}
   - component: {fileID: 6387113860673280554}
-  - component: {fileID: 5120727683827982156}
-  - component: {fileID: 6009289224871080225}
-  - component: {fileID: 7214833998740188158}
-  - component: {fileID: 4366965390160723355}
   m_Layer: 0
   m_Name: Portal
   m_TagString: Untagged
@@ -364,58 +360,6 @@ MonoBehaviour:
   _pointChecksOnly: 0
   _center: {x: 0, y: 2.5, z: 0}
   _size: {x: 5, y: 5, z: 1}
---- !u!65 &5120727683827982156
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3677365077774950170}
-  m_Material: {fileID: 0}
-  m_IsTrigger: 0
-  m_Enabled: 1
-  serializedVersion: 2
-  m_Size: {x: 5, y: 0, z: 0.1}
-  m_Center: {x: 0, y: 0, z: 0}
---- !u!65 &6009289224871080225
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3677365077774950170}
-  m_Material: {fileID: 0}
-  m_IsTrigger: 0
-  m_Enabled: 1
-  serializedVersion: 2
-  m_Size: {x: 0, y: 5, z: 0.1}
-  m_Center: {x: 2.5, y: 2.5, z: 0}
---- !u!65 &7214833998740188158
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3677365077774950170}
-  m_Material: {fileID: 0}
-  m_IsTrigger: 0
-  m_Enabled: 1
-  serializedVersion: 2
-  m_Size: {x: 5, y: 0, z: 0.1}
-  m_Center: {x: 0, y: 5, z: 0}
---- !u!65 &4366965390160723355
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3677365077774950170}
-  m_Material: {fileID: 0}
-  m_IsTrigger: 0
-  m_Enabled: 1
-  serializedVersion: 2
-  m_Size: {x: 0, y: 5, z: 0.1}
-  m_Center: {x: -2.5, y: 2.5, z: 0}
 --- !u!1 &4294308238416012495
 GameObject:
   m_ObjectHideFlags: 0
@@ -535,40 +479,40 @@ Camera:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4504733436971965107}
-  m_Enabled: 1
+  m_Enabled: 0
   serializedVersion: 2
-  m_ClearFlags: 1
-  m_BackGroundColor: {r: 0.19215687, g: 0.3019608, b: 0.4745098, a: 0}
+  m_ClearFlags: 2
+  m_BackGroundColor: {r: 0, g: 0, b: 0, a: 1}
   m_projectionMatrixMode: 1
   m_GateFitMode: 2
   m_FOVAxisMode: 0
-  m_SensorSize: {x: 16, y: 1}
+  m_SensorSize: {x: 36, y: 24}
   m_LensShift: {x: 0, y: 0}
-  m_FocalLength: 19.88
+  m_FocalLength: 50
   m_NormalizedViewPortRect:
     serializedVersion: 2
     x: 0
     y: 0
     width: 1
     height: 1
-  near clip plane: 0.03
-  far clip plane: 1000
-  field of view: 30
+  near clip plane: 0.1
+  far clip plane: 50000
+  field of view: 70
   orthographic: 0
-  orthographic size: 3
-  m_Depth: 1
+  orthographic size: 100
+  m_Depth: 0
   m_CullingMask:
     serializedVersion: 2
-    m_Bits: 4194305
+    m_Bits: 109049623
   m_RenderingPath: -1
-  m_TargetTexture: {fileID: 8400000, guid: 746c8b9d2350a26479c6321215841f23, type: 2}
+  m_TargetTexture: {fileID: 0}
   m_TargetDisplay: 0
   m_TargetEye: 3
   m_HDR: 1
-  m_AllowMSAA: 1
+  m_AllowMSAA: 0
   m_AllowDynamicResolution: 1
   m_ForceIntoRT: 0
-  m_OcclusionCulling: 1
+  m_OcclusionCulling: 0
   m_StereoConvergence: 10
   m_StereoSeparation: 0.022
 --- !u!114 &9101015171592966541
@@ -817,7 +761,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7946731624863645108}
-  - component: {fileID: 7955074594261927255}
   - component: {fileID: 3034911190291107711}
   - component: {fileID: 7649290065308714195}
   - component: {fileID: 7016959744204840819}
@@ -843,22 +786,6 @@ Transform:
   m_Father: {fileID: 1949850055231204287}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &7955074594261927255
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7874976842226189677}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a00a4b529366e7a35af5046cca370e8e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _sector: {fileID: 0}
-  _checkIllumination: 0
-  _illuminationRadius: 0
-  _localIlluminationOffset: {x: 0, y: 0, z: 0}
 --- !u!114 &3034911190291107711
 MonoBehaviour:
   m_ObjectHideFlags: 0
