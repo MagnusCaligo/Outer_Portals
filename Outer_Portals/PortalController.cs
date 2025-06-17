@@ -364,7 +364,6 @@ namespace OuterPortals.src
 
                     continue;
                 }
-                pc.OnInvisible();
             }
 
         }
