@@ -15,8 +15,6 @@ namespace OuterPortals.src
     public class PortalController : MonoBehaviour
     {
 
-        public static int maximumRenderDistance = 100;  // This is how close you need to be to a portal before it will actually start rendering. Used for performance.
-
         public Camera camera;
         public GameObject renderPlane;
         public PortalController linkedPortal;
@@ -24,6 +22,11 @@ namespace OuterPortals.src
         public String sectorName;
         public GameObject teleportationPlane;
         public GameObject PortalSectorDetector;
+
+        // Adjustable Configs for individual portals
+        public int portalMaximumRecursion  = 3;     // By default, don't render portals in portals
+        public int portalMaxRenderDistance = 50;    // How close the camera (player or another portal) has to be before this portal renders
+        public int portalFarClipPlane      = 1000; // How far back should the camera render
 
         private static readonly List<Camera> cameras = new List<Camera>();
         private static List<PortalController> portalControllers = new List<PortalController>();
@@ -33,7 +36,6 @@ namespace OuterPortals.src
         private List<OWRigidbody> teleportationOccupants;
         private SectorDetector sectorDetector;
         private OWCamera owCamera;
-        private static RenderTexture oldTexture = null;
 
         // Corners for calculating clipping
         private List<Vector3> corners;
@@ -46,7 +48,6 @@ namespace OuterPortals.src
 
         public void Start()
         {
-
             var sector = SectorManager.GetRegisteredSectors().Find(sector => sector.name == transform.parent.name);
             Locator.GetPlayerCamera().GetComponentInParent<PlanetaryFogImageEffect>().enabled = false;
 
@@ -62,11 +63,34 @@ namespace OuterPortals.src
             if (playerCamera == null)
                 playerCamera = Locator.GetPlayerCamera().mainCamera;
 
-            cameras.Add(camera);
-            camera.targetTexture = cameraRenderTexture;
-            cameraMaterial.mainTexture = cameraRenderTexture;
+            // Camera Stuff
+            {
+                cameras.Add(camera);
+                camera.targetTexture = cameraRenderTexture;
+                cameraMaterial.mainTexture = cameraRenderTexture;
+                owCamera = gameObject.GetComponentsInChildren<OWCamera>()[0];
+                //owCamera.gameObject.AddComponent<PlanetaryFogImageEffect>().fogShader = Shader.Find("Hidden/PlanetaryFogImageEffect");
+                //owCamera.gameObject.GetAddComponent<PostProcessingBehaviour>();
+                //owCamera._postProcessingSettings = Locator.GetPlayerCamera()._postProcessingSettings;
+                //owCamera._postProcessingSettings = Locator.GetPlayerCamera().postProcessingSettings;
+
+                camera.farClipPlane = portalFarClipPlane;
+                var playerOWCam = Locator.GetPlayerBody().GetComponentInChildren<OWCamera>();
+                if (!playerOWCam.onThisPreCull.GetCallbacks().Contains(checkVisibilityOfPortalsFromPlayerCamera))
+                {
+                    playerOWCam.onThisPreCull.AddListener(checkVisibilityOfPortalsFromPlayerCamera);
+                }
+                var probeOWCam = Locator.GetProbe().GetComponentInChildren<OWCamera>();
+                if (!probeOWCam.onThisPreCull.GetCallbacks().Contains(checkVisibilityOfPortalsFromPlayerCamera))
+                {
+                    probeOWCam.onThisPreCull.AddListener(checkVisibilityOfPortalsFromPlayerCamera);
+                }
+
+                camera.enabled = false;
+                owCamera.enabled = false;
+            }
+
             renderPlane.GetComponent<MeshRenderer>().sharedMaterial = cameraMaterial;
-            portalControllers.Add(this);
 
             visibilityObject = renderPlane.GetAddComponent<VisibilityObject>();
             teleportationOccupants = new List<OWRigidbody>();
@@ -82,13 +106,18 @@ namespace OuterPortals.src
                 triggerVolume.OnExit += onLeaveTeleportationPlane;
             }
 
-            owCamera = gameObject.GetComponentsInChildren<OWCamera>()[0];
-            owCamera._postProcessingSettings = Locator.GetPlayerCamera().postProcessingSettings;
-            Locator.GetPlayerBody().GetComponentInChildren<OWCamera>().onThisPreRender.AddListener((OWCamera) => this.checkVisibilityOfPortalsFromPlayerCamera());
-            camera.enabled = false;
-            owCamera.enabled = false;
             // Start invisible
             OnInvisible();
+        }
+
+        public void OnEnable()
+        {
+            portalControllers.Add(this);  // Keep a list of portals so we can iterate when recursive rendering
+        }
+
+        public void OnDisable()
+        {
+            portalControllers.Remove(this);  // Keep a list of portals so we can iterate when recursive rendering
         }
 
         public void onEntryTeleporationPlane(GameObject obj)
@@ -123,9 +152,6 @@ namespace OuterPortals.src
             // iterate backwards since we remove
             for (var i = teleportationOccupants.Count - 1; i >= 0; i--)
             {
-
-                if (teleportationOccupants[i].CompareTag("Player")){
-                }
 
                 var occupant = teleportationOccupants[i];
                 var direction = Vector3.zero;
@@ -310,10 +336,10 @@ namespace OuterPortals.src
                 if (pc.enabled == false ) continue;
                 if (linkedPortal == null || pc == linkedPortal) continue;
                 var distance = (linkedPortal.transform.position - pc.transform.position).magnitude;
-                if (distance > maximumRenderDistance)
+                if (distance > pc.portalMaxRenderDistance)
                     continue;
                 var visible = pc.GetVisibilityObject().CheckVisibilityFromProbe(owCamera);
-                if (visible && Vector3.Dot(transform.position - pc.transform.position, pc.transform.forward) <= 0f)
+                if (visible && Vector3.Dot(linkedPortal.transform.position - pc.transform.position, pc.transform.forward) <= 0f)
                 {
                     PortalController linkedPortal = pc.linkedPortal;
                     if (pc.linkedPortal == null)
@@ -325,9 +351,14 @@ namespace OuterPortals.src
                     Quaternion oldCameraRotation = pc.camera.transform.rotation;
                     pc.OnVisible();
                     pc.doMoveCameraRelativeToPosition(camera.transform.position, camera.transform.rotation, linkedPortal.transform);
-                    pc.checkVisibilityOfOtherPortals(ttl - 1);
+
+                    // Only render recursive portals if the portal is configured for it
+                    if (pc.portalMaximumRecursion >= ttl)
+                        pc.checkVisibilityOfOtherPortals(ttl - 1);
+
                     pc.calculateClipPlane(linkedPortal.transform);
                     pc.owCamera.Render();
+                    pc.owCamera.enabled = false;
                     pc.camera.transform.position = oldCameraLocation;
                     pc.camera.transform.rotation = oldCameraRotation;
 
@@ -338,13 +369,14 @@ namespace OuterPortals.src
 
         }
 
-        public void checkVisibilityOfPortalsFromPlayerCamera()
+        public static void checkVisibilityOfPortalsFromPlayerCamera(OWCamera cam)
         {
             foreach (PortalController pc in portalControllers)
             {
-                var distance = (playerCamera.transform.position - pc.transform.position).magnitude; 
-                if (distance > maximumRenderDistance) continue;
-                if (pc.GetVisibilityObject().IsVisible() && Vector3.Dot(playerCamera.transform.position - pc.transform.position, pc.transform.forward) < 0f)
+                if (!pc.enabled) continue;
+                var distance = (cam.transform.position - pc.transform.position).magnitude; 
+                if (distance > pc.portalMaxRenderDistance) continue;
+                if (pc.GetVisibilityObject().IsVisible() && Vector3.Dot(cam.transform.position - pc.transform.position, pc.transform.forward) < 0f)
                 {
                     Transform output_portal_transform;
                     if (pc.linkedToSelf || pc.linkedPortal == null)
@@ -356,9 +388,11 @@ namespace OuterPortals.src
                         output_portal_transform = pc.linkedPortal.transform;
                     }
 
-                    pc.checkVisibilityOfOtherPortals(2);
                     pc.OnVisible();
-                    pc.doMoveCameraRelativeToPosition(playerCamera.transform.position, playerCamera.transform.rotation, output_portal_transform);
+                    pc.doMoveCameraRelativeToPosition(cam.transform.position, cam.transform.rotation, output_portal_transform);
+                    pc.checkVisibilityOfOtherPortals(pc.portalMaximumRecursion);
+                    if (pc.linkedPortal != null)
+                        pc.calculateClipPlane(pc.linkedPortal.transform);
                     pc.owCamera.Render();
                     continue;
                 }
@@ -471,14 +505,14 @@ namespace OuterPortals.src
 
             if (!lastVisibility && visibilityObject.IsVisible()
                 && playerInSector
-                && positionDifference.magnitude < maximumRenderDistance)
+                && positionDifference.magnitude < portalMaxRenderDistance)
             {
                 OnVisible();
                 lastVisibility = true;
             }
             else if (lastVisibility && (!visibilityObject.IsVisible()
                 || !playerInSector
-                || positionDifference.magnitude >= maximumRenderDistance))
+                || positionDifference.magnitude >= portalMaxRenderDistance))
             {
                 OnInvisible();
                 lastVisibility = false;
@@ -488,7 +522,8 @@ namespace OuterPortals.src
         public void OnDestroy()
         {
             cameras.Remove(camera);
-            portalControllers.Remove(this);
+            if (portalControllers.Contains(this))
+                portalControllers.Remove(this);
             DestroyImmediate(cameraRenderTexture);
             DestroyImmediate(cameraMaterial);
             OnInvisible(); // to deallocate

@@ -75,7 +75,17 @@ public class OuterPortals : ModBehaviour
     {
         __instance._currentFuel = PlayerResources._maxFuel;
         return false;
+
     }
+
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(ProbeCamera), nameof(ProbeCamera.TakeSnapshot))]
+    public static bool probePreRender(ProbeCamera __instance)
+    {
+        PortalController.checkVisibilityOfPortalsFromPlayerCamera(__instance._camera);
+        return true;
+    }
+
 
     [HarmonyPostfix]
     [HarmonyPatch(typeof(ProbeLauncher), nameof(ProbeLauncher.LaunchProbe))]

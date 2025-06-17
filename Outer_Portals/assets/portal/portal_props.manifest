@@ -1,12 +1,12 @@
 ManifestFileVersion: 0
-CRC: 3731935445
+CRC: 2099686003
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 4c5664ade59a40e3d278b5aa93f687af
+    Hash: bd85a46caef14e38d79f0d23661d03e4
   TypeTreeHash:
     serializedVersion: 2
-    Hash: c8457a3da0b3c44932fbec5062bfec44
+    Hash: bb706f16092f84a2aeed681ae9bad5f8
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -31,14 +31,14 @@ ClassTypes:
   Script: {instanceID: 0}
 - Class: 84
   Script: {instanceID: 0}
-- Class: 108
-  Script: {instanceID: 0}
 - Class: 114
   Script: {fileID: 11500000, guid: fbb2498122f7e23a2e87544333cb528f, type: 3}
 - Class: 114
   Script: {fileID: 11500000, guid: d4f7acb28de892d6c474b09ae2fa223e, type: 3}
 - Class: 114
   Script: {fileID: 11500000, guid: a223d69493f03f4a8e6bda998c52d250, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 6c6ee9e4d5184455a9b6e8cef8a94cb6, type: 3}
 - Class: 114
   Script: {fileID: 11500000, guid: 8aa7b556a5fd542f0d4d803660cdf028, type: 3}
 - Class: 114
@@ -53,9 +53,7 @@ ClassTypes:
   Script: {instanceID: 0}
 SerializeReferenceClassIdentifiers: []
 Assets:
-- Assets/Custom Prefabs/New Material 1.mat
 - Assets/Custom Prefabs/Portal.prefab
-- Assets/Custom Prefabs/Portal_test.prefab
 - Assets/Custom Prefabs/Mirror Render Texture.renderTexture
 - Assets/Custom Prefabs/Camera Material.mat
 Dependencies:

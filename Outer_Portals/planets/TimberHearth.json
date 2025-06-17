@@ -8,20 +8,21 @@
             "path": "Assets/Custom Prefabs/Portal.prefab",
             "parentPath": "Sector_TH/Sector_Village/Sector_StartingCamp",
             "physicsRadius": 0,
+            "relativeToParent": true,
             "position": {
-              "x": 14.52596,
-              "y": -49.14703,
-              "z": 183.8636
+              "x": 14.4143,
+              "y": -45.72053,
+              "z": 184.7528
             },
             "rotation": {
-              "x": 51.9872,
-              "y": 253.8924,
-              "z": 244.8227
+              "x": 10.50049,
+              "y": 271.5491,
+              "z": 255.7528
             },
             "normal": {
-              "x": 0.07093513,
-              "y": -0.2619901,
-              "z": 0.9624603
+              "x": 0.07103616,
+              "y": -0.2419841,
+              "z": 0.9676766
             },
             "stretch": {
               "x": 1,
@@ -33,21 +34,22 @@
             "rename": "far_side",
             "assetBundle": "assets/portal/portal_props",
             "path": "Assets/Custom Prefabs/Portal.prefab",
-            "parentPath": "Sector_TH/Sector_Village/Sector_Observatory",
+            "parentPath": "TimberHearth_Body/Sector_TH/Sector_Village/Geometry_Village/BatchedGroup/BatchedMeshColliders_5",
+            "relativeToParent": true,
             "position": {
-              "x": 61.29608,
-              "y": 171.8322,
-              "z": -170.6476
+              "x": 22.02319,
+              "y": -44.44231,
+              "z": 184.3118
             },
             "rotation": {
-              "x": 32.42822,
-              "y": 112.8534,
-              "z": 328.6712
+              "x": 348.8481,
+              "y": 94.1182,
+              "z": 103.6348
             },
             "normal": {
-              "x": 0.2201662,
-              "y": 0.7209975,
-              "z": -0.6570311
+              "x": 0.1152661,
+              "y": -0.2312813,
+              "z": 0.9660345
             },
             "stretch": {
               "x": 1,
