@@ -528,46 +528,17 @@ namespace OuterPortals.src
             OnInvisible(); // to deallocate
         }
 
-        public static void linkPortals(PortalLinks links)
+        public void linkPortal(String portalName)
         {
-            foreach (KeyValuePair<string, string> link in links.links)
-            {
-                GameObject entrance_portal = GameObject.Find(link.Key);
-                GameObject exit_portal = GameObject.Find(link.Value);
-                if (entrance_portal == null)
-                {
-                    OuterPortals.Instance.ModHelper.Console.WriteLine($"Error: Failed to find portal with name {link.Key}");
-                    continue;
-                }
-                if (exit_portal == null)
-                {
-                    OuterPortals.Instance.ModHelper.Console.WriteLine($"Error: Failed to find portal with name {link.Value}");
-                    continue;
-                }
-                PortalController entr_portal_controller = entrance_portal.GetComponent<PortalController>();
-                PortalController exit_portal_controller = exit_portal.GetComponent<PortalController> ();
-                if (entr_portal_controller == null)
-                {
-                    OuterPortals.Instance.ModHelper.Console.WriteLine($"Entrance portal with name {link.Key} does not have a portal controller.");
-                    continue;
-                }
-                if (exit_portal_controller == null)
-                {
-                    OuterPortals.Instance.ModHelper.Console.WriteLine($"Exit portal with name {link.Value} does not have a portal controller.");
-                    continue;
-                }
-                OuterPortals.Instance.ModHelper.Console.WriteLine($"Linking {link.Key} to {link.Value}");
-                entr_portal_controller.linkedPortal = exit_portal_controller;
-                entr_portal_controller.linkedToSelf = false;
-            }
+            GameObject portal = GameObject.Find(portalName);
 
-            foreach (KeyValuePair<string, string> portal_and_sector in links.sectors)
+            if (portal == null)
             {
-                GameObject portal = GameObject.Find(portal_and_sector.Key);
-                if (portal == null)
-                    continue;
-                GameObject.Find(portal_and_sector.Key).GetComponent<PortalController>().sectorName = portal_and_sector.Value;
+                NHLogger.Log($"Failed to link portal {name} to {portalName}");
+                return;
             }
+            this.linkedPortal = portal.GetComponent<PortalController>();
+            this.linkedToSelf = false;
         }
 
         // TODO: this can probably be moved into Update

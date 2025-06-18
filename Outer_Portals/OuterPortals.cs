@@ -59,10 +59,27 @@ public class OuterPortals : ModBehaviour
         api.GetStarSystemLoadedEvent().AddListener((name) =>
             {
                 ModHelper.Console.WriteLine($"Body: {name} Loaded!");
-                var data = api.QuerySystem<PortalLinks>("$.extras.PortalLinks");
+                PortalConfigs data = (PortalConfigs) api.QuerySystem(typeof(PortalConfigs), "$.extras.PortalConfigs");
                 if (data != null) {
                     ModHelper.Console.WriteLine("Found Portal Link Data");
-                    PortalController.linkPortals(data);
+
+                    foreach (var portalConfig in data.Portals)
+                    {
+
+                        GameObject portal = GameObject.Find(portalConfig.name);
+                        if (portal == null)
+                        {
+                            NHLogger.Log($"Failed to find portal {portalConfig.name}");
+                            continue;
+                        }
+                        PortalController pc = portal.GetComponent<PortalController>();
+                        if (portalConfig.linkedPortal != null) 
+                            pc.linkPortal(portalConfig.linkedPortal);
+                        pc.sectorName = portalConfig.sector;
+                        pc.portalMaximumRecursion = portalConfig.portalMaxRecursion;
+                        pc.portalMaxRenderDistance = portalConfig.portalMaxRenderDistance;
+                        pc.portalFarClipPlane = portalConfig.portalFarClipPlane;
+                    }
                 }
                 else
                     ModHelper.Console.WriteLine("No Portal Links found!");
