@@ -1,11 +1,14 @@
-﻿using System;
+﻿using HarmonyLib;
+using Microsoft.SqlServer.Server;
+using NewHorizons.Components;
+using NewHorizons.Handlers;
+using NewHorizons.Utility.OWML;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
+using System.Runtime.CompilerServices;
 using UnityEngine;
-using HarmonyLib;
-using NewHorizons.Utility.OWML;
-using NewHorizons.Handlers;
-using NewHorizons.Components;
 using UnityEngine.PostProcessing;
 
 namespace OuterPortals.src
@@ -15,8 +18,6 @@ namespace OuterPortals.src
     public class PortalController : MonoBehaviour
     {
 
-        public static int maximumRenderDistance = 100;  // This is how close you need to be to a portal before it will actually start rendering. Used for performance.
-
         public Camera camera;
         public GameObject renderPlane;
         public PortalController linkedPortal;
@@ -24,6 +25,12 @@ namespace OuterPortals.src
         public String sectorName;
         public GameObject teleportationPlane;
         public GameObject PortalSectorDetector;
+
+        // Adjustable Configs for individual portals
+        public int portalMaximumRecursion  = 3;     // By default, don't render portals in portals
+        public int portalMaxRenderDistance = 50;    // How close the camera (player or another portal) has to be before this portal renders
+        public int portalFarClipPlane      = 1000;  // How far back should the camera render
+        public bool doScaling              = false; // Whether to scale occupants as they travel through
 
         private static readonly List<Camera> cameras = new List<Camera>();
         private static List<PortalController> portalControllers = new List<PortalController>();
@@ -33,7 +40,6 @@ namespace OuterPortals.src
         private List<OWRigidbody> teleportationOccupants;
         private SectorDetector sectorDetector;
         private OWCamera owCamera;
-        private static RenderTexture oldTexture = null;
 
         // Corners for calculating clipping
         private List<Vector3> corners;
@@ -46,7 +52,6 @@ namespace OuterPortals.src
 
         public void Start()
         {
-
             var sector = SectorManager.GetRegisteredSectors().Find(sector => sector.name == transform.parent.name);
             Locator.GetPlayerCamera().GetComponentInParent<PlanetaryFogImageEffect>().enabled = false;
 
@@ -54,19 +59,43 @@ namespace OuterPortals.src
             // Setup Corners
             float radiusOfPortal = transform.localScale.x * (renderPlane.transform.localScale.x / 2f);
             corners = new List<Vector3>();
-            corners.Add(new Vector3(-radiusOfPortal, 0, 0));
-            corners.Add(new Vector3(-radiusOfPortal, 2 * radiusOfPortal, 0));
-            corners.Add(new Vector3(radiusOfPortal, 0, 0));
-            corners.Add(new Vector3(radiusOfPortal, 2 * radiusOfPortal, 0));
+            Mesh quadMesh = gameObject.GetComponentInChildren<MeshFilter>().mesh;
+            foreach (var vert in quadMesh.vertices)
+            {
+                corners.Add(Vector3.Scale(vert, gameObject.transform.localScale));
+            }
 
             if (playerCamera == null)
                 playerCamera = Locator.GetPlayerCamera().mainCamera;
 
-            cameras.Add(camera);
-            camera.targetTexture = cameraRenderTexture;
-            cameraMaterial.mainTexture = cameraRenderTexture;
+            // Camera Stuff
+            {
+                cameras.Add(camera);
+                camera.targetTexture = cameraRenderTexture;
+                cameraMaterial.mainTexture = cameraRenderTexture;
+                owCamera = gameObject.GetComponentsInChildren<OWCamera>()[0];
+                //owCamera.gameObject.AddComponent<PlanetaryFogImageEffect>().fogShader = Shader.Find("Hidden/PlanetaryFogImageEffect");
+                //owCamera.gameObject.GetAddComponent<PostProcessingBehaviour>();
+                //owCamera._postProcessingSettings = Locator.GetPlayerCamera()._postProcessingSettings;
+                owCamera._postProcessingSettings = Locator.GetPlayerCamera().postProcessingSettings;
+
+                camera.farClipPlane = portalFarClipPlane;
+                var playerOWCam = Locator.GetPlayerBody().GetComponentInChildren<OWCamera>();
+                if (!playerOWCam.onThisPreCull.GetCallbacks().Contains(checkVisibilityOfPortalsFromPlayerCamera))
+                {
+                    playerOWCam.onThisPreCull.AddListener(checkVisibilityOfPortalsFromPlayerCamera);
+                }
+                var probeOWCam = Locator.GetProbe().GetComponentInChildren<OWCamera>();
+                if (!probeOWCam.onThisPreCull.GetCallbacks().Contains(checkVisibilityOfPortalsFromPlayerCamera))
+                {
+                    probeOWCam.onThisPreCull.AddListener(checkVisibilityOfPortalsFromPlayerCamera);
+                }
+
+                camera.enabled = false;
+                owCamera.enabled = false;
+            }
+
             renderPlane.GetComponent<MeshRenderer>().sharedMaterial = cameraMaterial;
-            portalControllers.Add(this);
 
             visibilityObject = renderPlane.GetAddComponent<VisibilityObject>();
             teleportationOccupants = new List<OWRigidbody>();
@@ -82,13 +111,18 @@ namespace OuterPortals.src
                 triggerVolume.OnExit += onLeaveTeleportationPlane;
             }
 
-            owCamera = gameObject.GetComponentsInChildren<OWCamera>()[0];
-            owCamera._postProcessingSettings = Locator.GetPlayerCamera().postProcessingSettings;
-            Locator.GetPlayerBody().GetComponentInChildren<OWCamera>().onThisPreRender.AddListener((OWCamera) => this.checkVisibilityOfPortalsFromPlayerCamera());
-            camera.enabled = false;
-            owCamera.enabled = false;
             // Start invisible
             OnInvisible();
+        }
+
+        public void OnEnable()
+        {
+            portalControllers.Add(this);  // Keep a list of portals so we can iterate when recursive rendering
+        }
+
+        public void OnDisable()
+        {
+            portalControllers.Remove(this);  // Keep a list of portals so we can iterate when recursive rendering
         }
 
         public void onEntryTeleporationPlane(GameObject obj)
@@ -123,9 +157,6 @@ namespace OuterPortals.src
             // iterate backwards since we remove
             for (var i = teleportationOccupants.Count - 1; i >= 0; i--)
             {
-
-                if (teleportationOccupants[i].CompareTag("Player")){
-                }
 
                 var occupant = teleportationOccupants[i];
                 var direction = Vector3.zero;
@@ -173,8 +204,11 @@ namespace OuterPortals.src
                             fa.SkipNextFrame();
                         Locator.GetPlayerBody().GetComponent<AlignPlayerWithForce>().SkipNextFrame();
                     }
-                    Vector3 scaleChange = occupant.transform.localScale - (transform.localScale - linkedPortalTransform.localScale);
-                    occupant.transform.localScale = scaleChange;
+                    if (doScaling)
+                    {
+                        Vector3 scaleChange = occupant.transform.localScale - (transform.localScale - linkedPortalTransform.localScale);
+                        occupant.transform.localScale = scaleChange;
+                    }
                 }
             }
         }
@@ -264,7 +298,7 @@ namespace OuterPortals.src
             }
         }
 
-        public void doMoveCameraRelativeToPosition(Vector3 camera_position, Quaternion camera_rotation, Transform output_portal)
+        public void doMoveCameraRelativeToPosition(Vector3 camera_position, Quaternion camera_rotation, PortalController output_portal)
         {
             // Adjust teleportation plane depending on direction player is facing
             // If the player is facing backwards, we need to move the teleportation back a little bit to prevent the camera from clipping through the portal
@@ -273,47 +307,43 @@ namespace OuterPortals.src
 
             Vector3 new_position;
             Quaternion new_rotation;
-            calculateRelativeCamera(camera_position, camera_rotation, output_portal, out new_position, out new_rotation);
+            calculateRelativeCamera(camera_position, camera_rotation, output_portal.transform, out new_position, out new_rotation);
             camera.transform.position = new_position;
             camera.transform.rotation = new_rotation;
 
             calculateClipPlane(output_portal);
         }
 
-        public void calculateClipPlane(Transform output_portal)
+        public void calculateClipPlane(PortalController output_portal)
         {
             // Calculate clip distance to maximize camera through portal while minimizing rendering stuff between camera and portal
             Plane clip = new Plane(camera.transform.forward, camera.transform.position);
 
             // Find Closest Corner
-            Vector3 closestCorner = corners.OrderBy(x => clip.GetDistanceToPoint(output_portal.TransformPoint(x))).First();
-            closestCorner = output_portal.TransformPoint(closestCorner);
-
-            // Shift plane to be in line with corner
-            clip = new Plane(camera.transform.forward, closestCorner);
+            Vector3 closestCorner = output_portal.corners.OrderBy(x => clip.GetDistanceToPoint(output_portal.renderPlane.transform.TransformPoint(x))).First();
+            closestCorner = output_portal.renderPlane.transform.TransformPoint(closestCorner);
 
             // Calculate distance between camera and plane
-            float closestDistance = -clip.GetDistanceToPoint(camera.transform.position);
+            float closestDistance = clip.GetDistanceToPoint(closestCorner);
             closestDistance = closestDistance < 0.1f ? 0.1f : closestDistance;
 
             camera.nearClipPlane = closestDistance;
         }
-        
 
         public void checkVisibilityOfOtherPortals(int ttl)
         {
             if (ttl - 1 < 0)
                 return;
-            if (linkedToSelf) return;
+            if (linkedToSelf)
+                return;
             foreach (PortalController pc in portalControllers)
             {
                 if (pc.enabled == false ) continue;
-                if (linkedPortal == null || pc == linkedPortal) continue;
                 var distance = (linkedPortal.transform.position - pc.transform.position).magnitude;
-                if (distance > maximumRenderDistance)
+                if (distance > pc.portalMaxRenderDistance)
                     continue;
                 var visible = pc.GetVisibilityObject().CheckVisibilityFromProbe(owCamera);
-                if (visible && Vector3.Dot(transform.position - pc.transform.position, pc.transform.forward) <= 0f)
+                if (visible && Vector3.Dot(linkedPortal.transform.position - pc.transform.position, pc.transform.forward) <= 0f)
                 {
                     PortalController linkedPortal = pc.linkedPortal;
                     if (pc.linkedPortal == null)
@@ -324,41 +354,79 @@ namespace OuterPortals.src
                     Vector3 oldCameraLocation = pc.camera.transform.position;
                     Quaternion oldCameraRotation = pc.camera.transform.rotation;
                     pc.OnVisible();
-                    pc.doMoveCameraRelativeToPosition(camera.transform.position, camera.transform.rotation, linkedPortal.transform);
-                    pc.checkVisibilityOfOtherPortals(ttl - 1);
-                    pc.calculateClipPlane(linkedPortal.transform);
+                    pc.doMoveCameraRelativeToPosition(camera.transform.position, camera.transform.rotation, linkedPortal);
+
+                    // Only render recursive portals if the portal is configured for it
+                    if (pc.portalMaximumRecursion >= ttl)
+                        pc.checkVisibilityOfOtherPortals(ttl - 1);
+
+                    pc.calculateClipPlane(linkedPortal);
                     pc.owCamera.Render();
                     pc.camera.transform.position = oldCameraLocation;
                     pc.camera.transform.rotation = oldCameraRotation;
 
                     continue;
                 }
-                pc.OnInvisible();
             }
 
         }
 
-        public void checkVisibilityOfPortalsFromPlayerCamera()
+        public static void checkVisibilityOfPortalsFromPlayerCamera(OWCamera cam)
         {
+            // Need to render in two different passes. The first past to render all the portals visible to the portal, the second pass to render portals visible to the player.
             foreach (PortalController pc in portalControllers)
             {
-                var distance = (playerCamera.transform.position - pc.transform.position).magnitude; 
-                if (distance > maximumRenderDistance) continue;
-                if (pc.GetVisibilityObject().IsVisible() && Vector3.Dot(playerCamera.transform.position - pc.transform.position, pc.transform.forward) < 0f)
+                if (!pc.enabled) continue;
+                var distance = (cam.transform.position - pc.transform.position).magnitude; 
+                if (distance > pc.portalMaxRenderDistance) continue;
+                if (pc.GetVisibilityObject().IsVisible() && Vector3.Dot(cam.transform.position - pc.transform.position, pc.transform.forward) < 0f)
                 {
                     Transform output_portal_transform;
+                    PortalController controller;
                     if (pc.linkedToSelf || pc.linkedPortal == null)
                     {
                         output_portal_transform = pc.transform;
+                        controller = pc;
                     }
                     else
                     {
                         output_portal_transform = pc.linkedPortal.transform;
+                        controller = pc.linkedPortal;
                     }
 
-                    pc.checkVisibilityOfOtherPortals(2);
                     pc.OnVisible();
-                    pc.doMoveCameraRelativeToPosition(playerCamera.transform.position, playerCamera.transform.rotation, output_portal_transform);
+                    pc.doMoveCameraRelativeToPosition(cam.transform.position, cam.transform.rotation, controller);
+                    pc.checkVisibilityOfOtherPortals(pc.portalMaximumRecursion);
+                    if (pc.linkedPortal != null)
+                        pc.calculateClipPlane(pc.linkedPortal);
+                    pc.owCamera.Render();
+                    continue;
+                }
+            }
+            foreach (PortalController pc in portalControllers)
+            {
+                if (!pc.enabled) continue;
+                var distance = (cam.transform.position - pc.transform.position).magnitude;
+                if (distance > pc.portalMaxRenderDistance) continue;
+                if (pc.GetVisibilityObject().IsVisible() && Vector3.Dot(cam.transform.position - pc.transform.position, pc.transform.forward) < 0f)
+                {
+                    Transform output_portal_transform;
+                    PortalController controller;
+                    if (pc.linkedToSelf || pc.linkedPortal == null)
+                    {
+                        output_portal_transform = pc.transform;
+                        controller = pc;
+                    }
+                    else
+                    {
+                        output_portal_transform = pc.linkedPortal.transform;
+                        controller = pc.linkedPortal;
+                    }
+
+                    pc.OnVisible();
+                    pc.doMoveCameraRelativeToPosition(cam.transform.position, cam.transform.rotation, controller);
+                    if (pc.linkedPortal != null)
+                        pc.calculateClipPlane(pc.linkedPortal);
                     pc.owCamera.Render();
                     continue;
                 }
@@ -471,14 +539,14 @@ namespace OuterPortals.src
 
             if (!lastVisibility && visibilityObject.IsVisible()
                 && playerInSector
-                && positionDifference.magnitude < maximumRenderDistance)
+                && positionDifference.magnitude < portalMaxRenderDistance)
             {
                 OnVisible();
                 lastVisibility = true;
             }
             else if (lastVisibility && (!visibilityObject.IsVisible()
                 || !playerInSector
-                || positionDifference.magnitude >= maximumRenderDistance))
+                || positionDifference.magnitude >= portalMaxRenderDistance))
             {
                 OnInvisible();
                 lastVisibility = false;
@@ -488,52 +556,24 @@ namespace OuterPortals.src
         public void OnDestroy()
         {
             cameras.Remove(camera);
-            portalControllers.Remove(this);
+            if (portalControllers.Contains(this))
+                portalControllers.Remove(this);
             DestroyImmediate(cameraRenderTexture);
             DestroyImmediate(cameraMaterial);
             OnInvisible(); // to deallocate
         }
 
-        public static void linkPortals(PortalLinks links)
+        public void linkPortal(String portalName)
         {
-            foreach (KeyValuePair<string, string> link in links.links)
-            {
-                GameObject entrance_portal = GameObject.Find(link.Key);
-                GameObject exit_portal = GameObject.Find(link.Value);
-                if (entrance_portal == null)
-                {
-                    OuterPortals.Instance.ModHelper.Console.WriteLine($"Error: Failed to find portal with name {link.Key}");
-                    continue;
-                }
-                if (exit_portal == null)
-                {
-                    OuterPortals.Instance.ModHelper.Console.WriteLine($"Error: Failed to find portal with name {link.Value}");
-                    continue;
-                }
-                PortalController entr_portal_controller = entrance_portal.GetComponent<PortalController>();
-                PortalController exit_portal_controller = exit_portal.GetComponent<PortalController> ();
-                if (entr_portal_controller == null)
-                {
-                    OuterPortals.Instance.ModHelper.Console.WriteLine($"Entrance portal with name {link.Key} does not have a portal controller.");
-                    continue;
-                }
-                if (exit_portal_controller == null)
-                {
-                    OuterPortals.Instance.ModHelper.Console.WriteLine($"Exit portal with name {link.Value} does not have a portal controller.");
-                    continue;
-                }
-                OuterPortals.Instance.ModHelper.Console.WriteLine($"Linking {link.Key} to {link.Value}");
-                entr_portal_controller.linkedPortal = exit_portal_controller;
-                entr_portal_controller.linkedToSelf = false;
-            }
+            GameObject portal = GameObject.Find(portalName);
 
-            foreach (KeyValuePair<string, string> portal_and_sector in links.sectors)
+            if (portal == null)
             {
-                GameObject portal = GameObject.Find(portal_and_sector.Key);
-                if (portal == null)
-                    continue;
-                GameObject.Find(portal_and_sector.Key).GetComponent<PortalController>().sectorName = portal_and_sector.Value;
+                NHLogger.Log($"Failed to link portal {name} to {portalName}");
+                return;
             }
+            this.linkedPortal = portal.GetComponentInChildren<PortalController>();
+            this.linkedToSelf = false;
         }
 
         // TODO: this can probably be moved into Update

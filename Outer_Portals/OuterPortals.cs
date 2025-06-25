@@ -59,10 +59,30 @@ public class OuterPortals : ModBehaviour
         api.GetStarSystemLoadedEvent().AddListener((name) =>
             {
                 ModHelper.Console.WriteLine($"Body: {name} Loaded!");
-                var data = api.QuerySystem<PortalLinks>("$.extras.PortalLinks");
+                PortalConfigs data = (PortalConfigs) api.QuerySystem(typeof(PortalConfigs), "$.extras.PortalConfigs");
                 if (data != null) {
                     ModHelper.Console.WriteLine("Found Portal Link Data");
-                    PortalController.linkPortals(data);
+
+                    foreach (var portalConfig in data.Portals)
+                    {
+
+                        GameObject portal = GameObject.Find(portalConfig.name);
+                        if (portal == null)
+                        {
+                            NHLogger.Log($"Failed to find portal {portalConfig.name}");
+                            continue;
+                        }
+                        PortalController pc = portal.GetComponentInChildren<PortalController>();
+                        if (portalConfig.linkedPortal != null)
+                        {
+                            NHLogger.Log($"Linking portal: {portalConfig.linkedPortal}");
+                            pc.linkPortal(portalConfig.linkedPortal);
+                        }
+                        pc.sectorName = portalConfig.sector;
+                        pc.portalMaximumRecursion = portalConfig.portalMaxRecursion;
+                        pc.portalMaxRenderDistance = portalConfig.portalMaxRenderDistance;
+                        pc.portalFarClipPlane = portalConfig.portalFarClipPlane;
+                    }
                 }
                 else
                     ModHelper.Console.WriteLine("No Portal Links found!");
@@ -75,7 +95,17 @@ public class OuterPortals : ModBehaviour
     {
         __instance._currentFuel = PlayerResources._maxFuel;
         return false;
+
     }
+
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(ProbeCamera), nameof(ProbeCamera.TakeSnapshot))]
+    public static bool probePreRender(ProbeCamera __instance)
+    {
+        PortalController.checkVisibilityOfPortalsFromPlayerCamera(__instance._camera);
+        return true;
+    }
+
 
     [HarmonyPostfix]
     [HarmonyPatch(typeof(ProbeLauncher), nameof(ProbeLauncher.LaunchProbe))]
