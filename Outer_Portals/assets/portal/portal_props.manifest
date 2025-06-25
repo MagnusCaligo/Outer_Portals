@@ -1,12 +1,12 @@
 ManifestFileVersion: 0
-CRC: 2099686003
+CRC: 3030532278
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: bd85a46caef14e38d79f0d23661d03e4
+    Hash: bf62fb8e6a09dea6bdcfef2c4f7b8301
   TypeTreeHash:
     serializedVersion: 2
-    Hash: bb706f16092f84a2aeed681ae9bad5f8
+    Hash: 4f2c41131c2e9275eedbb8e14015a3f8
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -40,6 +40,8 @@ ClassTypes:
 - Class: 114
   Script: {fileID: 11500000, guid: 6c6ee9e4d5184455a9b6e8cef8a94cb6, type: 3}
 - Class: 114
+  Script: {fileID: -67699756, guid: 2334e3c5bd9e3bd4095b8a5f392e3ba7, type: 3}
+- Class: 114
   Script: {fileID: 11500000, guid: 8aa7b556a5fd542f0d4d803660cdf028, type: 3}
 - Class: 114
   Script: {fileID: 11500000, guid: 53fe1f971c08db1945e16add52db7b68, type: 3}
@@ -48,11 +50,14 @@ ClassTypes:
 - Class: 114
   Script: {fileID: 11500000, guid: aff12a3bc29fba3935b000271c9090d4, type: 3}
 - Class: 114
-  Script: {fileID: -67699756, guid: 5c9dd17c8aedc3d4b803ae214f2779ce, type: 3}
+  Script: {fileID: -1453389776, guid: 2334e3c5bd9e3bd4095b8a5f392e3ba7, type: 3}
 - Class: 115
   Script: {instanceID: 0}
 SerializeReferenceClassIdentifiers: []
 Assets:
+- Assets/Custom Prefabs/PortalActivationVolume.prefab
+- Assets/Custom Prefabs/Portal_Upwards.prefab
+- Assets/Custom Prefabs/Portal_Downwards.prefab
 - Assets/Custom Prefabs/Portal.prefab
 - Assets/Custom Prefabs/Mirror Render Texture.renderTexture
 - Assets/Custom Prefabs/Camera Material.mat

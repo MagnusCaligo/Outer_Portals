@@ -1,12 +1,16 @@
 ManifestFileVersion: 0
-CRC: 156812717
+CRC: 1012043212
 AssetBundleManifest:
   AssetBundleInfos:
     Info_0:
-      Name: portal/portal_shaders
-      Dependencies:
-        Dependency_0: portal/portal_props
-    Info_1:
       Name: portal/portal_props
       Dependencies:
         Dependency_0: portal/portal_shaders
+    Info_1:
+      Name: portal/portal_shaders
+      Dependencies:
+        Dependency_0: portal/portal_props
+    Info_2:
+      Name: portal_library/portallibraryentrance
+      Dependencies:
+        Dependency_0: portal/portal_props

@@ -72,9 +72,12 @@ public class OuterPortals : ModBehaviour
                             NHLogger.Log($"Failed to find portal {portalConfig.name}");
                             continue;
                         }
-                        PortalController pc = portal.GetComponent<PortalController>();
-                        if (portalConfig.linkedPortal != null) 
+                        PortalController pc = portal.GetComponentInChildren<PortalController>();
+                        if (portalConfig.linkedPortal != null)
+                        {
+                            NHLogger.Log($"Linking portal: {portalConfig.linkedPortal}");
                             pc.linkPortal(portalConfig.linkedPortal);
+                        }
                         pc.sectorName = portalConfig.sector;
                         pc.portalMaximumRecursion = portalConfig.portalMaxRecursion;
                         pc.portalMaxRenderDistance = portalConfig.portalMaxRenderDistance;
