@@ -48,6 +48,7 @@ namespace OuterPortals.src
         private List<OWRigidbody> teleportationOccupants;
         private SectorDetector sectorDetector;
         private OWCamera owCamera;
+        private bool skipTeleportOneFrame = false;
 
         // Corners for calculating clipping
         private List<Vector3> corners;
@@ -190,6 +191,12 @@ namespace OuterPortals.src
         public void UpdateTeleportOccupants()
         {
 
+            if (skipTeleportOneFrame)
+            {
+                skipTeleportOneFrame = false;
+                return;
+            }
+
             // iterate backwards since we remove
             for (var i = teleportationOccupants.Count - 1; i >= 0; i--)
             {
@@ -197,21 +204,15 @@ namespace OuterPortals.src
                 var occupant = teleportationOccupants[i];
                 var direction = Vector3.zero;
 
-                // If its the player teleporting, compare using the camera position not the body position
                 var pos = occupant.GetPosition();
-                if (occupant.CompareTag("Player"))
-                {
 
-                    //pos = Locator.GetPlayerCamera().transform.position;
-                }
-
+                // Logic for handling occupants traveling through the volume. 
+                // Might need to adjust to use game delta time if running into teleportation issues.
                 Plane tpPlane = new Plane(teleportationPlane.transform.up, teleportationPlane.transform.position);
-                Vector3 relativeVelocity = transform.ToRelVel(occupant.GetVelocity(), pos);
-                Vector3 nextPosition = pos + (Time.deltaTime * relativeVelocity);
-                float nextDistance = tpPlane.GetDistanceToPoint(nextPosition);
+                float distance = tpPlane.GetDistanceToPoint(pos);
 
                 // If the occupant won't pass the plane, ignore it
-                if (nextDistance > 0f) continue;
+                if (distance > 0f) continue;
 
                 direction = occupant.transform.GetAttachedOWRigidbody().GetVelocity() - transform.GetAttachedOWRigidbody().GetVelocity();
 
@@ -256,7 +257,7 @@ namespace OuterPortals.src
                         if (fa != null)
                             fa.SkipNextFrame();
                         Locator.GetPlayerBody().GetComponent<AlignPlayerWithForce>().SkipNextFrame();
-                        linkedPortal.playerHelmetBox.SetActive(true);
+                        linkedPortal.skipTeleportOneFrame = true;
                     }
                     if (doScaling)
                     {
@@ -355,6 +356,8 @@ namespace OuterPortals.src
 
         public void doMovePlayerHelmetBox()
         {
+            var activationVolume = extraPlanesActivationVolume.GetComponent<OWTriggerVolume>();
+            shouldEnableHelmet =  activationVolume.IsTrackingObject(Locator.GetPlayerDetector());
             // Move player helmet box
             var helmetPos = Vector3.ProjectOnPlane(playerCamera.transform.position, transform.forward);
             playerHelmetBox.transform.position = helmetPos + Vector3.Dot(transform.position, transform.forward)*transform.forward;
@@ -474,9 +477,12 @@ namespace OuterPortals.src
             }
             foreach (PortalController pc in portalControllers)
             {
-                if (!pc.enabled) continue;
                 var distance = (cam.transform.position - pc.transform.position).magnitude;
-                if (distance > pc.portalMaxRenderDistance) continue;
+                if (!pc.enabled || distance > pc.portalMaxRenderDistance)
+                {
+                    pc.OnInvisible();
+                    continue;
+                }
                 // Enable "helmet" if the player is looking at the portal
                 if (Vector3.Dot(playerCamera.transform.forward, pc.transform.forward) > -0.5) // Have to increase it a bit, in case they enter from an angle
                     pc.playerHelmetBox.SetActive(pc.shouldEnableHelmet);
@@ -590,6 +596,8 @@ namespace OuterPortals.src
             lastVisibility = false;
 
             doTransformations = false;
+            shouldEnableHelmet = false;
+            playerHelmetBox.SetActive(false);
 
             if (linkedPortal == null)
                 return;
@@ -624,36 +632,6 @@ namespace OuterPortals.src
             {
                 sector.RemoveOccupant(sectorDetector);
                 sector = sector.GetParentSector();
-            }
-        }
-
-        public void UpdateVisibility()
-        {
-
-            // Check that we are facing the correct way and close enough
-            Vector3 positionDifference = playerCamera.transform.position - transform.position;
-
-            // Check if the player is in the same sector as the portal
-            bool playerInSector = false;
-            var sector = SectorManager.GetRegisteredSectors().Find(sector => sector.name == sectorName);
-            if (sector != null)
-                playerInSector = sector.GetOccupants().Find(occupant => occupant == Locator.GetPlayerSectorDetector());
-            else
-                playerInSector = true;  // If the portal doesn't exist in a sector, just used the maximumRenderDistance
-
-            if (!lastVisibility && visibilityObject.IsVisible()
-                && playerInSector
-                && positionDifference.magnitude < portalMaxRenderDistance)
-            {
-                OnVisible();
-                lastVisibility = true;
-            }
-            else if (lastVisibility && (!visibilityObject.IsVisible()
-                || !playerInSector
-                || positionDifference.magnitude >= portalMaxRenderDistance))
-            {
-                OnInvisible();
-                lastVisibility = false;
             }
         }
 
