@@ -7,6 +7,11 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 783460065898332036, guid: 5171b43d3b3ce6c489466d0d701af0a5,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 1949850055231204287, guid: 5171b43d3b3ce6c489466d0d701af0a5,
         type: 3}
       propertyPath: m_RootOrder
@@ -80,6 +85,11 @@ PrefabInstance:
     - target: {fileID: 4979070959881135449, guid: 5171b43d3b3ce6c489466d0d701af0a5,
         type: 3}
       propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5941317893610753370, guid: 5171b43d3b3ce6c489466d0d701af0a5,
+        type: 3}
+      propertyPath: teleportationPlaneOffset
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7938013302372089066, guid: 5171b43d3b3ce6c489466d0d701af0a5,

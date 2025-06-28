@@ -67,6 +67,21 @@ PrefabInstance:
       propertyPath: m_Name
       value: Portal_Downwards
       objectReference: {fileID: 0}
+    - target: {fileID: 5941317893610753370, guid: 5171b43d3b3ce6c489466d0d701af0a5,
+        type: 3}
+      propertyPath: cameraTeleportOffset
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5941317893610753370, guid: 5171b43d3b3ce6c489466d0d701af0a5,
+        type: 3}
+      propertyPath: teleportationPlaneOffset
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7938013302372089066, guid: 5171b43d3b3ce6c489466d0d701af0a5,
+        type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 8737289887918306448, guid: 5171b43d3b3ce6c489466d0d701af0a5,
         type: 3}
       propertyPath: m_LocalPosition.x
