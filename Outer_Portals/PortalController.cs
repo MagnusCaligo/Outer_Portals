@@ -2,7 +2,9 @@
 using Microsoft.SqlServer.Server;
 using NewHorizons.Components;
 using NewHorizons.Handlers;
+using NewHorizons.Utility;
 using NewHorizons.Utility.OWML;
+using Steamworks;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,23 +22,29 @@ namespace OuterPortals.src
 
         public Camera camera;
         public GameObject renderPlane;
+        public GameObject playerHelmetBox;
+        public GameObject extraPlanesActivationVolume;
         public PortalController linkedPortal;
         public bool linkedToSelf = false;
         public String sectorName;
         public GameObject teleportationPlane;
+        public GameObject occupantVolume;
         public GameObject PortalSectorDetector;
+        public float teleportationPlaneOffset = 0.0f;
 
         // Adjustable Configs for individual portals
         public int portalMaximumRecursion  = 3;     // By default, don't render portals in portals
         public int portalMaxRenderDistance = 50;    // How close the camera (player or another portal) has to be before this portal renders
         public int portalFarClipPlane      = 1000;  // How far back should the camera render
         public bool doScaling              = false; // Whether to scale occupants as they travel through
+        public Material maxRecursionBackupMaterial;
 
         private static readonly List<Camera> cameras = new List<Camera>();
         private static List<PortalController> portalControllers = new List<PortalController>();
         private bool lastVisibility = false;
         private VisibilityObject visibilityObject;
         private bool doTransformations = true;
+        private bool shouldEnableHelmet = false;
         private List<OWRigidbody> teleportationOccupants;
         private SectorDetector sectorDetector;
         private OWCamera owCamera;
@@ -52,9 +60,11 @@ namespace OuterPortals.src
 
         public void Start()
         {
+
+            setupMaxRecursiveMaterial();
+
             var sector = SectorManager.GetRegisteredSectors().Find(sector => sector.name == transform.parent.name);
             Locator.GetPlayerCamera().GetComponentInParent<PlanetaryFogImageEffect>().enabled = false;
-
 
             // Setup Corners
             float radiusOfPortal = transform.localScale.x * (renderPlane.transform.localScale.x / 2f);
@@ -96,6 +106,8 @@ namespace OuterPortals.src
             }
 
             renderPlane.GetComponent<MeshRenderer>().sharedMaterial = cameraMaterial;
+            foreach (var planeMesh in playerHelmetBox.GetComponentsInChildren<MeshRenderer>())
+                planeMesh.sharedMaterial = cameraMaterial;
 
             visibilityObject = renderPlane.GetAddComponent<VisibilityObject>();
             teleportationOccupants = new List<OWRigidbody>();
@@ -104,11 +116,18 @@ namespace OuterPortals.src
                 sectorDetector = PortalSectorDetector.GetComponent<SectorDetector>();
             }
 
-            var triggerVolume = teleportationPlane.GetComponent<OWTriggerVolume>();
+            var triggerVolume = occupantVolume.GetComponent<OWTriggerVolume>();
             if (triggerVolume != null)
             {
                 triggerVolume.OnEntry += onEntryTeleporationPlane;
                 triggerVolume.OnExit += onLeaveTeleportationPlane;
+            }
+
+            var activationVolume = extraPlanesActivationVolume.GetComponent<OWTriggerVolume>();
+            if (activationVolume != null)
+            {
+                triggerVolume.OnEntry += onEntryExtraPlanes;
+                triggerVolume.OnExit += onExitExtraPlanes;
             }
 
             // Start invisible
@@ -151,6 +170,23 @@ namespace OuterPortals.src
             }
         }
 
+        public void onEntryExtraPlanes(GameObject obj)
+        {
+            if (obj.CompareTag("PlayerDetector"))
+            {
+                shouldEnableHelmet = true;
+            }
+        }
+
+        public void onExitExtraPlanes(GameObject obj)
+        {
+            if (obj.CompareTag("PlayerDetector"))
+            {
+                shouldEnableHelmet = false;
+            }
+
+        }
+
         public void UpdateTeleportOccupants()
         {
 
@@ -160,9 +196,26 @@ namespace OuterPortals.src
 
                 var occupant = teleportationOccupants[i];
                 var direction = Vector3.zero;
+
+                // If its the player teleporting, compare using the camera position not the body position
+                var pos = occupant.GetPosition();
+                if (occupant.CompareTag("Player"))
+                {
+
+                    //pos = Locator.GetPlayerCamera().transform.position;
+                }
+
+                Plane tpPlane = new Plane(teleportationPlane.transform.up, teleportationPlane.transform.position);
+                Vector3 relativeVelocity = transform.ToRelVel(occupant.GetVelocity(), pos);
+                Vector3 nextPosition = pos + (Time.deltaTime * relativeVelocity);
+                float nextDistance = tpPlane.GetDistanceToPoint(nextPosition);
+
+                // If the occupant won't pass the plane, ignore it
+                if (nextDistance > 0f) continue;
+
                 direction = occupant.transform.GetAttachedOWRigidbody().GetVelocity() - transform.GetAttachedOWRigidbody().GetVelocity();
 
-                if (Vector3.Dot(teleportationPlane.transform.up, direction) < 0f)
+                //if (Vector3.Dot(teleportationPlane.transform.up, direction) < 0f)
                 {
                     Quaternion rotationDifference;
                     Transform linkedPortalTransform;
@@ -203,6 +256,7 @@ namespace OuterPortals.src
                         if (fa != null)
                             fa.SkipNextFrame();
                         Locator.GetPlayerBody().GetComponent<AlignPlayerWithForce>().SkipNextFrame();
+                        linkedPortal.playerHelmetBox.SetActive(true);
                     }
                     if (doScaling)
                     {
@@ -282,6 +336,7 @@ namespace OuterPortals.src
         public void FixedUpdate()
         {
             UpdateTeleportOccupants();
+            doMovePlayerHelmetBox();
         }
 
         public void calculateRelativeCamera(Vector3 camera_position, Quaternion camera_rotation, Transform portal, out Vector3 out_camera_position, out Quaternion out_camera_rotation)
@@ -298,12 +353,19 @@ namespace OuterPortals.src
             }
         }
 
+        public void doMovePlayerHelmetBox()
+        {
+            // Move player helmet box
+            var helmetPos = Vector3.ProjectOnPlane(playerCamera.transform.position, transform.forward);
+            playerHelmetBox.transform.position = helmetPos + Vector3.Dot(transform.position, transform.forward)*transform.forward;
+        }
+
         public void doMoveCameraRelativeToPosition(Vector3 camera_position, Quaternion camera_rotation, PortalController output_portal)
         {
             // Adjust teleportation plane depending on direction player is facing
             // If the player is facing backwards, we need to move the teleportation back a little bit to prevent the camera from clipping through the portal
-            float adjustment = (-Vector3.Dot(camera_rotation * Vector3.forward, transform.forward) + 1f) / 2f;
-            teleportationPlane.transform.SetLocalPositionZ(adjustment);
+            float adjustment = (Vector3.Dot(camera_rotation * Vector3.up, transform.up) + 1f) / 2f;
+            teleportationPlane.transform.SetLocalPositionZ(teleportationPlaneOffset);
 
             Vector3 new_position;
             Quaternion new_rotation;
@@ -332,8 +394,10 @@ namespace OuterPortals.src
 
         public void checkVisibilityOfOtherPortals(int ttl)
         {
-            if (ttl - 1 < 0)
+            if (ttl <= 0)
+            {
                 return;
+            }
             if (linkedToSelf)
                 return;
             foreach (PortalController pc in portalControllers)
@@ -359,11 +423,15 @@ namespace OuterPortals.src
                     // Only render recursive portals if the portal is configured for it
                     if (pc.portalMaximumRecursion >= ttl)
                         pc.checkVisibilityOfOtherPortals(ttl - 1);
+                    if( ttl -1 <= 0 )
+                        renderPlane.GetComponent<MeshRenderer>().sharedMaterial = maxRecursionBackupMaterial;
+
 
                     pc.calculateClipPlane(linkedPortal);
                     pc.owCamera.Render();
                     pc.camera.transform.position = oldCameraLocation;
                     pc.camera.transform.rotation = oldCameraRotation;
+                    renderPlane.GetComponent<MeshRenderer>().sharedMaterial = cameraMaterial;
 
                     continue;
                 }
@@ -379,7 +447,7 @@ namespace OuterPortals.src
                 if (!pc.enabled) continue;
                 var distance = (cam.transform.position - pc.transform.position).magnitude; 
                 if (distance > pc.portalMaxRenderDistance) continue;
-                if (pc.GetVisibilityObject().IsVisible() && Vector3.Dot(cam.transform.position - pc.transform.position, pc.transform.forward) < 0f)
+                if (pc.GetVisibilityObject().IsVisible() && Vector3.Dot(cam.transform.position - (pc.transform.position), pc.transform.forward) < 0.1f)
                 {
                     Transform output_portal_transform;
                     PortalController controller;
@@ -396,10 +464,11 @@ namespace OuterPortals.src
 
                     pc.OnVisible();
                     pc.doMoveCameraRelativeToPosition(cam.transform.position, cam.transform.rotation, controller);
+                    pc.playerHelmetBox.SetActive(false);
                     pc.checkVisibilityOfOtherPortals(pc.portalMaximumRecursion);
                     if (pc.linkedPortal != null)
                         pc.calculateClipPlane(pc.linkedPortal);
-                    pc.owCamera.Render();
+                    pc.renderPlane.GetComponent<MeshRenderer>().sharedMaterial = pc.cameraMaterial;
                     continue;
                 }
             }
@@ -408,7 +477,12 @@ namespace OuterPortals.src
                 if (!pc.enabled) continue;
                 var distance = (cam.transform.position - pc.transform.position).magnitude;
                 if (distance > pc.portalMaxRenderDistance) continue;
-                if (pc.GetVisibilityObject().IsVisible() && Vector3.Dot(cam.transform.position - pc.transform.position, pc.transform.forward) < 0f)
+                // Enable "helmet" if the player is looking at the portal
+                if (Vector3.Dot(playerCamera.transform.forward, pc.transform.forward) > -0.5) // Have to increase it a bit, in case they enter from an angle
+                    pc.playerHelmetBox.SetActive(pc.shouldEnableHelmet);
+                // Make sure the player is in front of the portal. We compare to 1 here as we give 1 meter wiggle room in case the player is behind the portal in the helmet.
+                // The difference in position between the pc and the camera is NOT normalized, so the dot product can be greater and less than 1 and -1
+                if (pc.GetVisibilityObject().IsVisible() && Vector3.Dot(cam.transform.position - pc.transform.position, pc.transform.forward) < 1f)
                 {
                     Transform output_portal_transform;
                     PortalController controller;
@@ -422,7 +496,6 @@ namespace OuterPortals.src
                         output_portal_transform = pc.linkedPortal.transform;
                         controller = pc.linkedPortal;
                     }
-
                     pc.OnVisible();
                     pc.doMoveCameraRelativeToPosition(cam.transform.position, cam.transform.rotation, controller);
                     if (pc.linkedPortal != null)
@@ -431,6 +504,37 @@ namespace OuterPortals.src
                     continue;
                 }
                 pc.OnInvisible();
+            }
+        }
+
+        public void setupMaxRecursiveMaterial()
+        {
+            // Replace shaders. Borrowed from NewHorizons: https://github.com/Outer-Wilds-New-Horizons/new-horizons/blob/main/NewHorizons/Utility/Files/AssetBundleUtilities.cs#L139-L157
+            if (maxRecursionBackupMaterial == null)
+            {
+                maxRecursionBackupMaterial = new Material(Shader.Find("Standard"));
+                maxRecursionBackupMaterial.color = Color.black;
+            }
+            else
+            {
+                var replacementShader = Shader.Find(maxRecursionBackupMaterial.shader.name);
+                if (replacementShader != null)
+                {
+                        // preserve override tag and render queue (for Standard shader)
+                        // keywords and properties are already preserved
+                        if (maxRecursionBackupMaterial.renderQueue != maxRecursionBackupMaterial.shader.renderQueue)
+                        {
+                            var renderType = maxRecursionBackupMaterial.GetTag("RenderType", false);
+                            var renderQueue = maxRecursionBackupMaterial.renderQueue;
+                            maxRecursionBackupMaterial.shader = replacementShader;
+                            maxRecursionBackupMaterial.SetOverrideTag("RenderType", renderType);
+                            maxRecursionBackupMaterial.renderQueue = renderQueue;
+                        }
+                        else
+                        {
+                            maxRecursionBackupMaterial.shader = replacementShader;
+                        }
+                }
             }
 
         }

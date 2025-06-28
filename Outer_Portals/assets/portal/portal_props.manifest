@@ -1,12 +1,12 @@
 ManifestFileVersion: 0
-CRC: 3030532278
+CRC: 1810655087
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: bf62fb8e6a09dea6bdcfef2c4f7b8301
+    Hash: 2802f891f214f91db40aae6c0732ac06
   TypeTreeHash:
     serializedVersion: 2
-    Hash: 4f2c41131c2e9275eedbb8e14015a3f8
+    Hash: 3260419d17d7ebce4a7cdca130f0ed1d
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -40,6 +40,8 @@ ClassTypes:
 - Class: 114
   Script: {fileID: 11500000, guid: 6c6ee9e4d5184455a9b6e8cef8a94cb6, type: 3}
 - Class: 114
+  Script: {fileID: -1453389776, guid: 2334e3c5bd9e3bd4095b8a5f392e3ba7, type: 3}
+- Class: 114
   Script: {fileID: -67699756, guid: 2334e3c5bd9e3bd4095b8a5f392e3ba7, type: 3}
 - Class: 114
   Script: {fileID: 11500000, guid: 8aa7b556a5fd542f0d4d803660cdf028, type: 3}
@@ -49,8 +51,6 @@ ClassTypes:
   Script: {fileID: 11500000, guid: f913c288c393f80a7e923fc1c775f4fb, type: 3}
 - Class: 114
   Script: {fileID: 11500000, guid: aff12a3bc29fba3935b000271c9090d4, type: 3}
-- Class: 114
-  Script: {fileID: -1453389776, guid: 2334e3c5bd9e3bd4095b8a5f392e3ba7, type: 3}
 - Class: 115
   Script: {instanceID: 0}
 SerializeReferenceClassIdentifiers: []
@@ -62,4 +62,4 @@ Assets:
 - Assets/Custom Prefabs/Mirror Render Texture.renderTexture
 - Assets/Custom Prefabs/Camera Material.mat
 Dependencies:
-- C:/Users/joe30/source/repos/OuterPortals/Outer_Portals/assets/portal/portal_shaders
+- C:/Users/joe30/source/repos/OuterPortalsDemo/OuterPortalsDemo/assets/portal/portal_shaders
