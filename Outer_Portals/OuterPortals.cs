@@ -98,6 +98,7 @@ public class OuterPortals : ModBehaviour
 
     }
 
+    // TODO: remove? we already listen to probe prerender
     [HarmonyPrefix]
     [HarmonyPatch(typeof(ProbeCamera), nameof(ProbeCamera.TakeSnapshot))]
     public static bool probePreRender(ProbeCamera __instance)

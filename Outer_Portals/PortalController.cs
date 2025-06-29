@@ -56,6 +56,7 @@ namespace OuterPortals.src
         
         private static readonly Quaternion halfTurn = Quaternion.Euler(0.0f, 180.0f, 0.0f);
 
+        // TODO: only allocate when visible? could save memory
         private Material cameraMaterial = new Material(OuterPortals.portalShader);
         private RenderTexture cameraRenderTexture = new RenderTexture(Screen.width, Screen.height, 24);
 
@@ -65,6 +66,8 @@ namespace OuterPortals.src
             setupMaxRecursiveMaterial();
 
             var sector = SectorManager.GetRegisteredSectors().Find(sector => sector.name == transform.parent.name);
+            // disable fog cuz it looks weird thru portals
+            // this is probably a bad idea. ambient occlusion has same problem and we really shouldnt be disabling them lol
             Locator.GetPlayerCamera().GetComponentInParent<PlanetaryFogImageEffect>().enabled = false;
 
             // Setup Corners
@@ -84,7 +87,7 @@ namespace OuterPortals.src
                 cameras.Add(camera);
                 camera.targetTexture = cameraRenderTexture;
                 cameraMaterial.mainTexture = cameraRenderTexture;
-                owCamera = gameObject.GetComponentsInChildren<OWCamera>()[0];
+                owCamera = gameObject.GetComponentInChildren<OWCamera>();
                 //owCamera.gameObject.AddComponent<PlanetaryFogImageEffect>().fogShader = Shader.Find("Hidden/PlanetaryFogImageEffect");
                 //owCamera.gameObject.GetAddComponent<PostProcessingBehaviour>();
                 //owCamera._postProcessingSettings = Locator.GetPlayerCamera()._postProcessingSettings;
@@ -102,6 +105,7 @@ namespace OuterPortals.src
                     probeOWCam.onThisPreCull.AddListener(checkVisibilityOfPortalsFromPlayerCamera);
                 }
 
+                // we manually render the portal cameras
                 camera.enabled = false;
                 owCamera.enabled = false;
             }
@@ -244,18 +248,15 @@ namespace OuterPortals.src
                     occupant.SetVelocity(linkedPortalTransform.FromRelVel(halfTurn * relVel, newPos));
                     occupant.SetAngularVelocity(linkedPortalTransform.FromRelAngVel(halfTurn * relAngVel));
 
-                    if (!Physics.autoSyncTransforms) Physics.SyncTransforms(); // or else "Player grounded spherecast" complains
-                    
-                    if (linkedToSelf)
+                    if (!linkedToSelf) // dont remove occupant if we come out the same portal we go into
                     {
                         teleportationOccupants.RemoveAt(i);
                     }
 
                     if (occupant.CompareTag("Player"))
                     {
-                        var fa = Locator.GetPlayerBody().GetComponent<ForceApplier>();
-                        if (fa != null)
-                            fa.SkipNextFrame();
+                        // need to skip a frame or else the camera goes weird. DreamWorldController also does this when teleporting.
+                        Locator.GetPlayerDetector().GetComponent<ForceApplier>().SkipNextFrame();
                         Locator.GetPlayerBody().GetComponent<AlignPlayerWithForce>().SkipNextFrame();
                         linkedPortal.skipTeleportOneFrame = true;
                     }
@@ -264,6 +265,8 @@ namespace OuterPortals.src
                         Vector3 scaleChange = occupant.transform.localScale - (transform.localScale - linkedPortalTransform.localScale);
                         occupant.transform.localScale = scaleChange;
                     }
+                    
+                    if (!Physics.autoSyncTransforms) Physics.SyncTransforms(); // or else "Player grounded spherecast" complains
                 }
             }
         }
@@ -388,7 +391,7 @@ namespace OuterPortals.src
             Vector3 closestCorner = output_portal.corners.OrderBy(x => clip.GetDistanceToPoint(output_portal.renderPlane.transform.TransformPoint(x))).First();
             closestCorner = output_portal.renderPlane.transform.TransformPoint(closestCorner);
 
-            // Calculate distance between camera and plane
+            // Calculate distance between camera plane and corner. this moves the near plane to intersect that corner.
             float closestDistance = clip.GetDistanceToPoint(closestCorner);
             closestDistance = closestDistance < 0.1f ? 0.1f : closestDistance;
 
@@ -401,7 +404,7 @@ namespace OuterPortals.src
             {
                 return;
             }
-            if (linkedToSelf)
+            if (linkedToSelf) // we can never see ourselves, so dont bother rendering
                 return;
             foreach (PortalController pc in portalControllers)
             {
@@ -509,7 +512,8 @@ namespace OuterPortals.src
                     pc.owCamera.Render();
                     continue;
                 }
-                pc.OnInvisible();
+                pc.OnInvisible(); // only player/probe should make things invisible
+                // BUG: this might cause inner portals to enable and disable every frame. huge lag there from sector loading and unloading!
             }
         }
 
@@ -581,7 +585,6 @@ namespace OuterPortals.src
 
             sector = SectorManager.GetRegisteredSectors().Find(sector => sector.name == linkedPortalSectorName);
 
-            // the same strategy NomaiRemoteCameraPlatform uses
             while (sector != null)
             {
                 sector.AddOccupant(sectorDetector);
@@ -658,7 +661,7 @@ namespace OuterPortals.src
             this.linkedToSelf = false;
         }
 
-        // TODO: this can probably be moved into Update
+        // BUG: this breaks with probe looking at portals because probe FOV is different from player
         [HarmonyPostfix]
         [HarmonyPatch(typeof(PlayerCameraController), nameof(PlayerCameraController.UpdateFieldOfView))]
         public static void matchFieldOfView()
