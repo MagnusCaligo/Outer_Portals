@@ -59,22 +59,16 @@ namespace OuterPortals.src
         private Material cameraMaterial = new Material(OuterPortals.portalShader);
         private RenderTexture cameraRenderTexture = new RenderTexture(Screen.width, Screen.height, 24);
 
+
         public void Start()
         {
 
             setupMaxRecursiveMaterial();
+            calculateCorners();
 
             var sector = SectorManager.GetRegisteredSectors().Find(sector => sector.name == transform.parent.name);
             Locator.GetPlayerCamera().GetComponentInParent<PlanetaryFogImageEffect>().enabled = false;
 
-            // Setup Corners
-            float radiusOfPortal = transform.localScale.x * (renderPlane.transform.localScale.x / 2f);
-            corners = new List<Vector3>();
-            Mesh quadMesh = gameObject.GetComponentInChildren<MeshFilter>().mesh;
-            foreach (var vert in quadMesh.vertices)
-            {
-                corners.Add(Vector3.Scale(vert, gameObject.transform.localScale));
-            }
 
             if (playerCamera == null)
                 playerCamera = Locator.GetPlayerCamera().mainCamera;
@@ -143,6 +137,18 @@ namespace OuterPortals.src
         public void OnDisable()
         {
             portalControllers.Remove(this);  // Keep a list of portals so we can iterate when recursive rendering
+        }
+        public void calculateCorners()
+        {
+            NHLogger.Log($"Should be waking up: {name}");
+            // Setup Corners; These are always needed even before the portal is created, so we should make them now
+            float radiusOfPortal = transform.localScale.x * (renderPlane.transform.localScale.x / 2f);
+            corners = new List<Vector3>();
+            Mesh quadMesh = gameObject.GetComponentInChildren<MeshFilter>().mesh;
+            foreach (var vert in quadMesh.vertices)
+            {
+                corners.Add(Vector3.Scale(vert, gameObject.transform.localScale));
+            }
         }
 
         public void onEntryTeleporationPlane(GameObject obj)
@@ -216,7 +222,7 @@ namespace OuterPortals.src
 
                 direction = occupant.transform.GetAttachedOWRigidbody().GetVelocity() - transform.GetAttachedOWRigidbody().GetVelocity();
 
-                //if (Vector3.Dot(teleportationPlane.transform.up, direction) < 0f)
+                if (Vector3.Dot(teleportationPlane.transform.up, direction) < 0f)
                 {
                     Quaternion rotationDifference;
                     Transform linkedPortalTransform;
@@ -245,11 +251,6 @@ namespace OuterPortals.src
                     occupant.SetAngularVelocity(linkedPortalTransform.FromRelAngVel(halfTurn * relAngVel));
 
                     if (!Physics.autoSyncTransforms) Physics.SyncTransforms(); // or else "Player grounded spherecast" complains
-                    
-                    if (linkedToSelf)
-                    {
-                        teleportationOccupants.RemoveAt(i);
-                    }
 
                     if (occupant.CompareTag("Player"))
                     {
@@ -383,6 +384,9 @@ namespace OuterPortals.src
         {
             // Calculate clip distance to maximize camera through portal while minimizing rendering stuff between camera and portal
             Plane clip = new Plane(camera.transform.forward, camera.transform.position);
+
+            if (output_portal.corners == null)
+                output_portal.calculateCorners();
 
             // Find Closest Corner
             Vector3 closestCorner = output_portal.corners.OrderBy(x => clip.GetDistanceToPoint(output_portal.renderPlane.transform.TransformPoint(x))).First();

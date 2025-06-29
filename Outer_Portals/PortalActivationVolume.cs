@@ -10,23 +10,27 @@ using UnityEngine;
 public class PortalActivationVolume : MonoBehaviour {
 
     public List<GameObject> managedPortals = new List<GameObject>();
-    private OWCollider volume;
-    private List<Collider> occupants = new List<Collider>();
+    private OWTriggerVolume volume;
+    private List<OWCollider> occupants = new List<OWCollider>();
 
     public void Start()
     {
         
-        volume = gameObject.GetComponent<OWCollider>();
+        volume = gameObject.GetComponent<OWTriggerVolume>();
         if (volume == null)
         {
             NHLogger.LogError("PortalActivationVolume volume is null!");
             return;
         }
+        volume.OnEntry += OnTriggerEnter;
+        volume.OnExit += OnTriggerExit;
     }
 
-    public void OnTriggerEnter(Collider occupant)
+    public void OnTriggerEnter(GameObject occupantGameObject)
     {
-        if (occupant.tag != "Player")
+        
+        OWCollider occupant = occupantGameObject.GetComponent<OWCollider>();
+        if (occupant.tag != "PlayerDetector")
             return;
         if (occupants.Contains(occupant))
             return;
@@ -41,9 +45,10 @@ public class PortalActivationVolume : MonoBehaviour {
             p.SetActive(true);
         }
     }
-    public void OnTriggerExit(Collider occupant)
+    public void OnTriggerExit(GameObject occupantGameObject)
     {
-        if (occupant.tag != "Player")
+        OWCollider occupant = occupantGameObject.GetComponent<OWCollider>();
+        if (occupant.tag != "PlayerDetector")
             return;
         if (!occupants.Contains(occupant))
             return;
