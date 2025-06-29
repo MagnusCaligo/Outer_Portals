@@ -66,8 +66,7 @@ namespace OuterPortals.src
             setupMaxRecursiveMaterial();
 
             var sector = SectorManager.GetRegisteredSectors().Find(sector => sector.name == transform.parent.name);
-            // disable fog cuz it looks weird thru portals
-            // this is probably a bad idea. ambient occlusion has same problem and we really shouldnt be disabling them lol
+            // disable fog cuz it looks weird thru portals. THIS IS TEMPORARY (i think) cuz we want fog on the player lol
             Locator.GetPlayerCamera().GetComponentInParent<PlanetaryFogImageEffect>().enabled = false;
 
             // Setup Corners
