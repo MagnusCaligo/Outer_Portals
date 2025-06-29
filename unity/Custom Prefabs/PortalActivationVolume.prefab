@@ -9,10 +9,10 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6691116575923165771}
-  - component: {fileID: 8840159307969745267}
-  - component: {fileID: 6196060693339768827}
   - component: {fileID: 7139172786976029602}
-  m_Layer: 0
+  - component: {fileID: 5935992624316287806}
+  - component: {fileID: 1906706549910854681}
+  m_Layer: 16
   m_Name: PortalActivationVolume
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -33,44 +33,6 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &8840159307969745267
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6584222468260453889}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f913c288c393f80a7e923fc1c775f4fb, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _lodActivationMask:
-    player: 1
-    probe: 1
-    ship: 1
-    environment: 0
-  _ignorePhysicsSwapDelay: 0
-  _drawBounds: 0
-  _doNotStream: 0
---- !u!114 &6196060693339768827
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6584222468260453889}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a223d69493f03f4a8e6bda998c52d250, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _collisionMode: 0
-  _layer: 1
-  _layerMask: -1
-  _pointChecksOnly: 0
-  _center: {x: 0, y: 0, z: 0}
-  _size: {x: 1, y: 1, z: 1}
 --- !u!114 &7139172786976029602
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -84,3 +46,31 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   managedPortals: []
+--- !u!65 &5935992624316287806
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6584222468260453889}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 1
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Size: {x: 1, y: 1, z: 1}
+  m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &1906706549910854681
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6584222468260453889}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fbb2498122f7e23a2e87544333cb528f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _initialOccupants: []
+  _sharedEntryways: []
+  _ignoreDuplicateOccupantWarning: 0
